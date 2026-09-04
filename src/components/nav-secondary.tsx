@@ -10,6 +10,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { Logout } from "@/action/auth.action"
 
 export function NavSecondary({
   items,
@@ -35,18 +36,16 @@ export function NavSecondary({
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
-          <SidebarMenuItem >
-              <SidebarMenuButton asChild onClick={() => {
-                localStorage.removeItem('pin')
-                window.location.reload()
-              }}>
-                <div>
-
+          <SidebarMenuItem>
+            <form action={Logout}>
+              <SidebarMenuButton asChild>
+                <button type="submit" className="w-full">
                   <IconLogout />
                   <span>Logout</span>
-                </div>
+                </button>
               </SidebarMenuButton>
-            </SidebarMenuItem>
+            </form>
+          </SidebarMenuItem>
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>

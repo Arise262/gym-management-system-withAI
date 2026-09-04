@@ -2,6 +2,7 @@
 
 import  prisma from '@/lib/prisma';
 
+import { requireRole } from "@/lib/session";
 // Type definitions
 export interface FoodItemInput {
   name: string;
@@ -26,6 +27,7 @@ export interface FoodItemResponse {
 
 // 1. GetAllFoodItems
 export async function GetAllFoodItems(): Promise<FoodItemResponse[]> {
+  await requireRole("TRAINER");
   try {
     const foodItems = await prisma.foodItems.findMany({
       orderBy: { createdAt: 'desc' },
@@ -45,6 +47,7 @@ export async function GetAllFoodItems(): Promise<FoodItemResponse[]> {
 
 // 2. AddFoodItem
 export async function AddFoodItem(data: FoodItemInput): Promise<FoodItemResponse> {
+  await requireRole("ADMIN");
   try {
     // Validate inputs
     if (!data.name || !data.calories) {
@@ -76,6 +79,7 @@ export async function AddFoodItem(data: FoodItemInput): Promise<FoodItemResponse
 
 // 3. GetFoodItemById
 export async function GetFoodItemById(id: string): Promise<FoodItemResponse | null> {
+  await requireRole("TRAINER");
   try {
     const foodItem = await prisma.foodItems.findUnique({
       where: { id },
@@ -99,6 +103,7 @@ export async function GetFoodItemById(id: string): Promise<FoodItemResponse | nu
 
 // 4. GetFoodItemsByArray
 export async function GetFoodItemsByArray(ids: string[]): Promise<FoodItemResponse[]> {
+  await requireRole("TRAINER");
   try {
     if (!ids || ids.length === 0) {
       return [];
@@ -125,6 +130,7 @@ export async function GetFoodItemsByArray(ids: string[]): Promise<FoodItemRespon
 
 // 5. DeleteFoodItem
 export async function DeleteFoodItem(id: string): Promise<void> {
+  await requireRole("ADMIN");
   try {
     await prisma.foodItems.delete({
       where: { id },

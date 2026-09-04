@@ -3,6 +3,7 @@
 import prisma  from '@/lib/prisma';
 import { format, parse, isValid, isToday } from 'date-fns';
 
+import { requireRole } from "@/lib/session";
 // Type definitions
 export interface AttendanceInput {
   member_id: string;
@@ -27,6 +28,7 @@ const validateDateFormat = (dateStr: string): boolean => {
 
 // 1. AddAttendance
 export async function AddAttendance(data: AttendanceInput): Promise<AttendanceResponse> {
+  await requireRole("TRAINER");
   try {
     // Validate inputs
     if (!data.member_id || !data.date) {
@@ -74,6 +76,7 @@ export async function AddAttendance(data: AttendanceInput): Promise<AttendanceRe
 
 // 2. GetTodaysAttendance
 export async function GetTodaysAttendance(): Promise<AttendanceResponse[]> {
+  await requireRole("TRAINER");
   try {
     const today = format(new Date(), 'dd-MM-yyyy');
 
@@ -92,6 +95,7 @@ export async function GetTodaysAttendance(): Promise<AttendanceResponse[]> {
 
 // 3. GetAttendanceByDate
 export async function GetAttendanceByDate(date: string): Promise<AttendanceResponse[]> {
+  await requireRole("TRAINER");
   try {
     if (!validateDateFormat(date)) {
       throw new Error('Invalid date format. Use dd-MM-yyyy');
@@ -120,6 +124,7 @@ export async function GetAttendanceByDate(date: string): Promise<AttendanceRespo
 
 // 4. GetAttendanceByMemberId
 export async function GetAttendanceByMemberId(member_id: string): Promise<AttendanceResponse[]> {
+  await requireRole("TRAINER");
   try {
     const attendances = await prisma.attendance.findMany({
       where: {
@@ -136,6 +141,7 @@ export async function GetAttendanceByMemberId(member_id: string): Promise<Attend
 
 // 5. DeleteAttendanceById
 export async function DeleteAttendanceById(id: string): Promise<void> {
+  await requireRole("ADMIN");
   try {
     await prisma.attendance.delete({
       where: { id },

@@ -1,6 +1,8 @@
 "use server";
 
 import prisma from "@/lib/prisma";
+import { requireRole } from "@/lib/session";
+import { loginEmailFor, hashPassword, DEFAULT_TEMP_PASSWORD } from "@/lib/accounts";
 import {
   format,
   parse,
@@ -87,6 +89,7 @@ export async function generateUniqueMemberCode(): Promise<string> {
 }
 
 export async function AddMember(data: MemberInput): Promise<MemberResponse> {
+  await requireRole("ADMIN");
   try {
     // Validate inputs (remove memberCode from required fields)
     if (!data.name || !data.phone || !data.DOB || !data.DOJ || !data.gender) {
@@ -103,18 +106,35 @@ export async function AddMember(data: MemberInput): Promise<MemberResponse> {
 
     // Generate unique member code
     const memberCode = await generateUniqueMemberCode();
+    const loginEmail = loginEmailFor(memberCode, data.email);
 
-    const member = await prisma.member.create({
-      data: {
-        name: data.name,
-        email: data.email,
-        memberCode, // Use the generated code
-        phone: Number(data.phone),
-        address: data.address,
-        DOB: data.DOB,
-        gender: data.gender,
-        DOJ: data.DOJ,
-      },
+    const clash = await prisma.user.findUnique({ where: { email: loginEmail } });
+    if (clash) {
+      throw new Error(`An account already uses the email ${loginEmail}`);
+    }
+
+    const passwordHash = await hashPassword(DEFAULT_TEMP_PASSWORD);
+
+    // A staff-created member needs a login too, or they can never sign in.
+    // Both rows are written together so a member can never exist without an
+    // account (or an account without its member).
+    const member = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: { email: loginEmail, passwordHash, role: "MEMBER" },
+      });
+      return tx.member.create({
+        data: {
+          userId: user.id,
+          name: data.name,
+          email: data.email,
+          memberCode, // Use the generated code
+          phone: Number(data.phone),
+          address: data.address,
+          DOB: data.DOB,
+          gender: data.gender,
+          DOJ: data.DOJ,
+        },
+      });
     });
 
     return {
@@ -131,6 +151,7 @@ export async function AddMember(data: MemberInput): Promise<MemberResponse> {
 export async function GetMemberById(
   id: string
 ): Promise<MemberResponse | null> {
+  await requireRole("TRAINER");
   try {
     const member = await prisma.member.findUnique({
       where: { id },
@@ -154,6 +175,7 @@ export async function GetMemberById(
 export async function GetMemberByMemberCode(
   memberCode: string
 ): Promise<MemberResponse | null> {
+  await requireRole("TRAINER");
   try {
     const member = await prisma.member.findUnique({
       where: { memberCode },
@@ -175,6 +197,7 @@ export async function GetMemberByMemberCode(
 
 // 4. GetAllMembers
 export async function GetAllMembers(): Promise<MemberResponse[]> {
+  await requireRole("TRAINER");
   try {
     const members = await prisma.member.findMany({
       orderBy: { createdAt: "desc" },
@@ -220,6 +243,7 @@ export async function UpdateMemberById(
   id: string,
   data: Partial<MemberInput>
 ): Promise<MemberResponse> {
+  await requireRole("ADMIN");
   try {
     // Validate inputs
     if (data.phone && !validatePhone(data.phone)) {
@@ -269,9 +293,20 @@ export async function UpdateMemberById(
 
 // 7. DeleteMemberById
 export async function DeleteMemberById(id: string): Promise<void> {
+  await requireRole("ADMIN");
   try {
-    await prisma.member.delete({
+    const member = await prisma.member.findUnique({
       where: { id },
+      select: { userId: true },
+    });
+
+    await prisma.$transaction(async (tx) => {
+      await tx.member.delete({ where: { id } });
+      // Otherwise the login survives the member and keeps its email reserved,
+      // which then blocks re-registering the same person.
+      if (member?.userId) {
+        await tx.user.delete({ where: { id: member.userId } });
+      }
     });
   } catch (error: any) {
     throw new Error(`Failed to delete member: ${error.message}`);
@@ -282,6 +317,7 @@ export async function DeleteMemberById(id: string): Promise<void> {
 export async function GetMembersWithTodaysBirthday(): Promise<
   MemberResponse[]
 > {
+  await requireRole("TRAINER");
   try {
     const today = format(new Date(), "dd-MM-yyyy");
     const todayDayMonth = today.slice(0, 5); // Get dd-MM
@@ -309,6 +345,7 @@ export async function GetMembersWithTodaysBirthday(): Promise<
 export async function GetMembersWithDOB(
   date: string
 ): Promise<MemberResponse[]> {
+  await requireRole("TRAINER");
   try {
     const SlicedDate = date.slice(0, 5);
     const members = await prisma.member.findMany({
@@ -332,6 +369,7 @@ export async function GetMembersWithDOB(
 export async function getAllMembersWithActiveSale(): Promise<
   (MemberResponse & { activeSale: SalesResponse | null })[]
 > {
+  await requireRole("TRAINER");
   try {
     const today = new Date();
     const members = await prisma.member.findMany({
@@ -385,6 +423,7 @@ export async function getAllMembersWithActiveSale(): Promise<
 }
 
 export async function getAllInActiveMembers(): Promise<any[]> {
+  await requireRole("TRAINER");
   try {
     const today = new Date();
 
@@ -433,6 +472,7 @@ export async function getAllInActiveMembers(): Promise<any[]> {
 
 
 export async function getAllActiveMembers(): Promise<any[]> {
+  await requireRole("TRAINER");
   try {
     const today = new Date();
 
@@ -484,6 +524,7 @@ export async function getAllActiveMembers(): Promise<any[]> {
 
 
 export async function updateReviewStatus(member_id: string, status: boolean) {
+  await requireRole("ADMIN");
   console.log(member_id, status);
   try {
     const members = await prisma.member.update({

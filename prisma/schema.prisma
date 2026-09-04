@@ -14,13 +14,40 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+/// Identity + credentials + role. Every person who can log in has exactly one
+/// User. Domain data still hangs off Member / Trainer, so existing member_id
+/// foreign keys (Sales, Attendance, FitnessRecord) are untouched.
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  role         Role      @default(MEMBER)
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  member       Member?
+  trainer      Trainer?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  notifications Notification[]
+  conversations ConversationParticipant[]
+  sentMessages  Message[]
+
+  @@index([role])
+}
+
+enum Role {
+  ADMIN
+  TRAINER
+  MEMBER
+}
+
 model Member {
   id         String          @id @default(uuid())
   name       String
   email      String?
   memberCode String          @unique
   phone      BigInt
-  password   String          @default("Test@12345")
   address    String?
   DOB        String
   reviewDone Boolean         @default(false)
@@ -32,6 +59,61 @@ model Member {
   attendance Attendance[]
   fitness    FitnessRecord[]
   // diets      DietChart[]
+
+  /// Nullable so the Phase 1 migration can run before the backfill script
+  /// links each existing member to a User. Backfill then makes it universal.
+  userId String? @unique
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  // ── AI profiling inputs (Phase 2) ────────────────────────────────────────
+  // All optional: existing members predate the profile form, and a member can
+  // use the gym without ever filling it in. The workout planner treats a null
+  // profile as "not enough information to generate a plan" rather than guessing.
+  fitnessGoal        FitnessGoal?
+  experienceLevel    ExperienceLevel?
+  bodyType           BodyType?
+  activityLevel      ActivityLevel?
+  workoutDaysPerWeek Int?
+  availableEquipment String[]
+  injuries           String?
+  medicalNotes       String?
+  heightCm           Int?
+  targetWeightKg     Int?
+
+  workoutPlans    WorkoutPlan[]
+  workoutSessions WorkoutSession[]
+  bookings        Booking[]
+  payments        Payment[]
+  retentionScores RetentionScore[]
+  engagement      EngagementMetric[]
+}
+
+enum FitnessGoal {
+  WEIGHT_LOSS
+  MUSCLE_GAIN
+  ENDURANCE
+  STRENGTH
+  GENERAL_FITNESS
+}
+
+enum ExperienceLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum BodyType {
+  ECTOMORPH
+  MESOMORPH
+  ENDOMORPH
+}
+
+enum ActivityLevel {
+  SEDENTARY
+  LIGHT
+  MODERATE
+  ACTIVE
+  VERY_ACTIVE
 }
 
 model Services {
@@ -46,19 +128,20 @@ model Services {
 }
 
 model Sales {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   member_id   String
   service_id  String
-  service     Services @relation(fields: [service_id], references: [id])
+  service     Services  @relation(fields: [service_id], references: [id])
   description String?
   discount    Int
   amount      Int
   paid        Int
   startDate   String
   endDate     String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  member      Member   @relation(fields: [member_id], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  member      Member    @relation(fields: [member_id], references: [id])
+  payments    Payment[]
 }
 
 model Attendance {
@@ -149,8 +232,11 @@ model FoodItems {
 }
 
 model Exercise {
-  id              String   @id @default(uuid())
-  json_id         String
+  id String @id @default(uuid())
+
+  /// Slug from exercises.json, e.g. "3_4_Sit-Up". Unique so the library seed is
+  /// idempotent — without it, re-seeding duplicates all 873 rows.
+  json_id String @unique
   name            String
   force           String?
   level           String?
@@ -163,4 +249,379 @@ model Exercise {
   images          String[]
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  planExercises WorkoutPlanExercise[]
+  workoutLogs   WorkoutLog[]
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  PHASE 2 — AI, booking, chat, payments, notifications
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ── Trainers & booking (guide module 6) ───────────────────────────────────
+
+model Trainer {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String
+  bio             String?
+  specializations String[]
+  certifications  String[]
+  /// Whole pesos, matching Services.price — no centavos anywhere in this table.
+  hourlyRate      Int      @default(0)
+  photoUrl        String?
+  isAvailable     Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  availability TrainerAvailability[]
+  bookings     Booking[]
+  workoutPlans WorkoutPlan[]
+}
+
+/// Recurring weekly availability. A trainer free Mon+Wed 09:00-17:00 has two rows.
+model TrainerAvailability {
+  id        String  @id @default(uuid())
+  trainerId String
+  trainer   Trainer @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+  /// 0 = Sunday .. 6 = Saturday, matching the JS Date.getDay() convention.
+  dayOfWeek Int
+  /// "HH:mm", 24-hour. String rather than DateTime because these are wall-clock
+  /// times that repeat weekly, not instants.
+  startTime String
+  endTime   String
+
+  @@unique([trainerId, dayOfWeek, startTime])
+  @@index([trainerId])
+}
+
+model Booking {
+  id        String        @id @default(uuid())
+  memberId  String
+  member    Member        @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  trainerId String
+  trainer   Trainer       @relation(fields: [trainerId], references: [id])
+  /// "dd-MM-yyyy" to match the date convention used across the existing tables.
+  date      String
+  startTime String
+  endTime   String
+  status    BookingStatus @default(PENDING)
+  notes     String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  /// Stops the same trainer being double-booked for one slot at the database
+  /// level, so a race between two members cannot produce a conflict.
+  @@unique([trainerId, date, startTime])
+  @@index([memberId, date])
+  @@index([trainerId, date])
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+// ── AI workout planning (guide module 4) ──────────────────────────────────
+
+model WorkoutPlan {
+  id            String      @id @default(uuid())
+  memberId      String
+  member        Member      @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  trainerId     String?
+  trainer       Trainer?    @relation(fields: [trainerId], references: [id])
+  generatedBy   PlanSource  @default(AI)
+  title         String
+  goal          FitnessGoal
+  durationWeeks Int
+  daysPerWeek   Int
+  status        PlanStatus  @default(ACTIVE)
+  /// The model's stated reasoning for this plan. Shown to the member, and the
+  /// evidence that the output is not arbitrary.
+  aiRationale   String?
+  /// Which model produced it, e.g. "claude-sonnet-5". Kept so results stay
+  /// attributable if the model is changed later.
+  modelUsed     String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  days WorkoutPlanDay[]
+
+  @@index([memberId, status])
+}
+
+enum PlanSource {
+  AI
+  TRAINER
+}
+
+enum PlanStatus {
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+model WorkoutPlanDay {
+  id         String      @id @default(uuid())
+  planId     String
+  plan       WorkoutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  weekNumber Int
+  dayNumber  Int
+  /// "Push", "Legs", "Rest" — free text so the model can label days naturally.
+  focus      String
+  isRestDay  Boolean     @default(false)
+
+  exercises WorkoutPlanExercise[]
+  sessions  WorkoutSession[]
+
+  @@unique([planId, weekNumber, dayNumber])
+}
+
+model WorkoutPlanExercise {
+  id          String         @id @default(uuid())
+  dayId       String
+  day         WorkoutPlanDay @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  /// FK into the existing 870-exercise library. The planner must pick from real
+  /// rows, which is what stops it inventing exercises.
+  exerciseId  String
+  exercise    Exercise       @relation(fields: [exerciseId], references: [id])
+  orderIndex  Int
+  sets        Int
+  /// "8-12" or "AMRAP" — a range, not a number, so keep it text.
+  reps        String
+  restSeconds Int            @default(60)
+  notes       String?
+
+  @@unique([dayId, orderIndex])
+  @@index([exerciseId])
+}
+
+// ── Workout completion tracking (guide module 3) ──────────────────────────
+
+model WorkoutSession {
+  id                String          @id @default(uuid())
+  memberId          String
+  member            Member          @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  /// Null for an ad-hoc workout logged outside any plan.
+  planDayId         String?
+  planDay           WorkoutPlanDay? @relation(fields: [planDayId], references: [id])
+  date              String
+  durationMinutes   Int?
+  completed         Boolean         @default(false)
+  /// Self-reported exertion, 1-10. Feeds progress trends.
+  perceivedExertion Int?
+  notes             String?
+  createdAt         DateTime        @default(now())
+
+  logs WorkoutLog[]
+
+  @@index([memberId, date])
+}
+
+model WorkoutLog {
+  id            String         @id @default(uuid())
+  sessionId     String
+  session       WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  exerciseId    String
+  exercise      Exercise       @relation(fields: [exerciseId], references: [id])
+  setsCompleted Int
+  repsCompleted String?
+  weightKg      Float?
+  completed     Boolean        @default(true)
+
+  @@index([sessionId])
+}
+
+// ── Predictive analytics (guide module 5) ─────────────────────────────────
+
+/// One row per member per scoring run. History is kept rather than overwritten
+/// so risk can be charted over time and the model's accuracy assessed after the
+/// fact — which is the evidence the methodology chapter needs.
+model RetentionScore {
+  id          String    @id @default(uuid())
+  memberId    String
+  member      Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  scoreDate   DateTime  @default(now())
+  /// 0 = certain to stay, 100 = certain to churn.
+  riskScore   Int
+  riskLevel   RiskLevel
+  /// Per-factor contributions, e.g. {"daysSinceLastVisit": 22, "weight": 0.35}.
+  /// Stored so any score can be explained rather than asserted.
+  factors     Json
+  /// Optional one-line natural-language summary for the admin dashboard.
+  explanation String?
+
+  @@unique([memberId, scoreDate])
+  @@index([riskLevel, scoreDate])
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// ── Engagement monitoring (guide module 10) ───────────────────────────────
+
+model EngagementMetric {
+  id                String   @id @default(uuid())
+  memberId          String
+  member            Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  periodStart       DateTime
+  periodEnd         DateTime
+  attendanceCount   Int      @default(0)
+  workoutsCompleted Int      @default(0)
+  workoutsAssigned  Int      @default(0)
+  /// workoutsCompleted / workoutsAssigned, 0..1. Stored rather than derived so
+  /// history survives even after plans are archived or deleted.
+  consistencyRate   Float    @default(0)
+  engagementScore   Int      @default(0)
+  createdAt         DateTime @default(now())
+
+  @@unique([memberId, periodStart])
+  @@index([memberId, periodStart])
+}
+
+// ── Chat (guide module 7) ─────────────────────────────────────────────────
+
+model Conversation {
+  id            String           @id @default(uuid())
+  type          ConversationType
+  title         String?
+  lastMessageAt DateTime         @default(now())
+  createdAt     DateTime         @default(now())
+
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  @@index([lastMessageAt])
+}
+
+enum ConversationType {
+  /// Member talking to the AI assistant. Exactly one human participant.
+  AI_ASSISTANT
+  MEMBER_TRAINER
+  SUPPORT
+}
+
+model ConversationParticipant {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Drives unread badges: messages after this timestamp are unread.
+  lastReadAt     DateTime?
+  joinedAt       DateTime     @default(now())
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  /// Null when the AI is the author — the assistant has no User row.
+  senderId       String?
+  sender         User?        @relation(fields: [senderId], references: [id], onDelete: SetNull)
+  role           MessageRole
+  content        String
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+// ── Payments (guide module 8) ─────────────────────────────────────────────
+
+model Payment {
+  id     String  @id @default(uuid())
+  /// Null for a payment taken before it is attached to a membership sale.
+  saleId String?
+  sale   Sales?  @relation(fields: [saleId], references: [id], onDelete: SetNull)
+
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  /// CENTAVOS, not pesos. PayMongo works in the smallest currency unit, and
+  /// mixing the two is the classic way to charge someone 100x. Sales.amount
+  /// elsewhere in this schema is in whole pesos — convert at the boundary.
+  amount   Int
+  currency String @default("PHP")
+
+  provider           String        @default("paymongo")
+  /// Unique so a replayed webhook cannot record the same payment twice.
+  providerPaymentId  String?       @unique
+  providerCheckoutId String?
+  method             String?
+  status             PaymentStatus @default(PENDING)
+  paidAt             DateTime?
+  /// Raw provider payload, kept for reconciliation and dispute evidence.
+  rawPayload         Json?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  @@index([memberId, status])
+  @@index([saleId])
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+  REFUNDED
+  EXPIRED
+}
+
+// ── Notifications (guide module 12) ───────────────────────────────────────
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  body      String
+  channel   NotifChannel     @default(IN_APP)
+  actionUrl String?
+  metadata  Json?
+  /// Null = unread. A timestamp rather than a boolean so "when did they see it"
+  /// is answerable for the engagement analytics.
+  readAt    DateTime?
+  /// Null = not yet dispatched. Set once the email actually goes out, so the
+  /// daily cron can retry failures without double-sending.
+  sentAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  @@index([userId, readAt])
+  @@index([type, sentAt])
+}
+
+enum NotifChannel {
+  IN_APP
+  EMAIL
+  BOTH
+}
+
+enum NotificationType {
+  WORKOUT_REMINDER
+  MEMBERSHIP_RENEWAL
+  PROGRESS_UPDATE
+  MOTIVATIONAL
+  TRAINER_ANNOUNCEMENT
+  BOOKING_CONFIRMED
+  PAYMENT_RECEIVED
+  RETENTION_ALERT
 }

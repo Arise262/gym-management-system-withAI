@@ -1,6 +1,7 @@
 "use server";
 
 import prisma from "@/lib/prisma";
+import { requireRole } from "@/lib/session";
 import {
   format,
   parse,
@@ -75,6 +76,7 @@ const validateDateFormat = (dateStr: string): boolean => {
 
 // 1. AddSales
 export async function AddSales(data: SalesInput): Promise<SalesResponse> {
+  await requireRole("ADMIN");
   try {
     // Validate inputs
     if (
@@ -140,6 +142,7 @@ export async function AddSales(data: SalesInput): Promise<SalesResponse> {
 
 // 2. GetAllSales
 export async function GetAllSales(): Promise<SalesResponse[]> {
+  await requireRole("TRAINER");
   try {
     const sales = await prisma.sales.findMany({
       orderBy: { createdAt: "desc" },
@@ -158,6 +161,7 @@ export async function GetAllSales(): Promise<SalesResponse[]> {
 export async function GetAllSalesByMemberId(
   member_id: string
 ): Promise<SalesResponse[]> {
+  await requireRole("TRAINER");
   try {
     const sales = await prisma.sales.findMany({
       where: { member_id },
@@ -175,6 +179,7 @@ export async function GetAllSalesByMemberId(
 
 // 4. GetSaleById
 export async function GetSaleById(id: string): Promise<SalesResponse | null> {
+  await requireRole("TRAINER");
   try {
     const sale = await prisma.sales.findUnique({
       where: { id },
@@ -195,6 +200,7 @@ export async function GetSaleById(id: string): Promise<SalesResponse | null> {
 
 // 5. GetSaleByDate
 export async function GetSaleByDate(date: string): Promise<SalesResponse[]> {
+  await requireRole("TRAINER");
   try {
     if (!validateDateFormat(date)) {
       throw new Error("Invalid date format. Use dd-MM-yyyy");
@@ -221,6 +227,7 @@ export async function GetSaleByDateRange(
   startDate: string,
   endDate: string
 ): Promise<SalesResponse[]> {
+  await requireRole("TRAINER");
   try {
     if (!validateDateFormat(startDate) || !validateDateFormat(endDate)) {
       throw new Error("Invalid date format. Use dd-MM-yyyy");
@@ -250,6 +257,7 @@ export async function UpdateSaleById(
   id: string,
   data: Partial<SalesInput>
 ): Promise<SalesResponse> {
+  await requireRole("ADMIN");
   try {
     // Validate inputs
     if (data.discount && data.discount < 0) {
@@ -308,6 +316,7 @@ export async function UpdateSaleById(
 
 // 8. GetAllActiveSale
 export async function GetAllActiveSale(): Promise<SalesResponse[]> {
+  await requireRole("TRAINER");
   try {
     const today = format(new Date(), "dd-MM-yyyy");
     const todayDate = parse(today, "dd-MM-yyyy", new Date());
@@ -332,6 +341,7 @@ export async function GetAllActiveSale(): Promise<SalesResponse[]> {
 export async function GetActiveSaleByMemberId(
   member_id: string
 ): Promise<SalesResponse[]> {
+  await requireRole("TRAINER");
   try {
     const today = format(new Date(), "dd-MM-yyyy");
     const todayDate = parse(today, "dd-MM-yyyy", new Date());
@@ -359,6 +369,7 @@ export async function GetActiveSaleByMemberId(
 export async function GetAllSalesWithExpand(): Promise<
   ExpandedSalesResponse[]
 > {
+  await requireRole("TRAINER");
   try {
     const sales = await prisma.sales.findMany({
       include: {
@@ -406,6 +417,7 @@ export async function GetAllSalesWithExpand(): Promise<
 
 // DeleteSaleById
 export async function DeleteSaleById(id: string): Promise<void> {
+  await requireRole("ADMIN");
   try {
     await prisma.sales.delete({
       where: { id },
@@ -418,6 +430,7 @@ export async function DeleteSaleById(id: string): Promise<void> {
 export async function GetSalesEndingInXdays(
   days: number
 ): Promise<SalesResponse[]> {
+  await requireRole("TRAINER");
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Normalize to start of day
@@ -502,6 +515,14 @@ export async function GetSalesEndingInXdays(
   }
 }
 
+/**
+ * NOT session-guarded, deliberately.
+ *
+ * /invoices/[sale_id] is a public share link so a member can open or print an
+ * invoice without logging in — it is protected by the sale's unguessable UUID.
+ * Adding requireRole here breaks that page. If invoices should become
+ * members-only, gate the route first, then guard this.
+ */
 export async function GetSaleWithExpand(sale_id: string): Promise<any> {
   try {
     const sale = await prisma.sales.findUnique({
@@ -539,6 +560,7 @@ export async function GetSaleWithExpand(sale_id: string): Promise<any> {
 export async function getAllExpiringSalesInXDays(
   days: number
 ): Promise<SalesResponse[]> {
+  await requireRole("TRAINER");
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Normalize to start of day
@@ -595,6 +617,7 @@ export async function getAllExpiringSalesInXDays(
 
 // GetAllActiveMembers
 export async function getAllActiveMembers(): Promise<MemberResponse[]> {
+  await requireRole("TRAINER");
   try {
     const today = new Date();
     const sales = await prisma.sales.findMany({
@@ -643,6 +666,7 @@ export async function getAllActiveMembers(): Promise<MemberResponse[]> {
 
 // GetSalesWithinLast7Days
 export async function GetSalesWithinLast7Days(): Promise<SalesResponse[]> {
+  await requireRole("TRAINER");
   try {
     const today = new Date();
     const sevenDaysAgo = subDays(today, 7);
@@ -669,6 +693,7 @@ export async function GetSalesWithinLast7Days(): Promise<SalesResponse[]> {
 
 // GetSalesInCurrentMonth
 export async function GetSalesInCurrentMonth(): Promise<SalesResponse[]> {
+  await requireRole("TRAINER");
   try {
     const today = format(new Date(), "MM-yyyy");
 
@@ -692,6 +717,7 @@ export async function GetSalesInCurrentMonth(): Promise<SalesResponse[]> {
 
 // GetSalesWithPendingAmount
 export async function GetSalesWithPendingAmount(): Promise<any> {
+  await requireRole("TRAINER");
   try {
     const sales = await prisma.sales.findMany({
       include: {

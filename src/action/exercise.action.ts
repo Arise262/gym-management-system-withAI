@@ -1,6 +1,7 @@
 "use server";
 
 import prisma from "@/lib/prisma";
+import { requireRole, requireUser } from "@/lib/session";
 
 // Type definitions
 export interface ExerciseInput {
@@ -38,6 +39,7 @@ export interface ExerciseResponse {
 export async function AddExercise(
   data: ExerciseInput
 ): Promise<ExerciseResponse> {
+  await requireRole("ADMIN");
   try {
     // Validate inputs
     if (!data.json_id || !data.name) {
@@ -77,6 +79,7 @@ export async function AddExercise(
 
 // 2. GetAllExercise
 export async function GetAllExercise(): Promise<ExerciseResponse[]> {
+  await requireUser();
   try {
     const exercises = await prisma.exercise.findMany({
       orderBy: { name: "asc" },
@@ -99,6 +102,7 @@ export async function GetAllExercise(): Promise<ExerciseResponse[]> {
 export async function GetExerciseById(
   id: string
 ): Promise<ExerciseResponse | null> {
+  await requireUser();
   try {
     const exercise = await prisma.exercise.findUnique({
       where: { id },

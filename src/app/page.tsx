@@ -1,7 +1,13 @@
-import Image from "next/image";
 import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/session";
 
-export default function Home() {
-  redirect("/dashboard");
-  return <></>;
+const HOME_BY_ROLE = {
+  ADMIN: "/dashboard",
+  TRAINER: "/trainer",
+  MEMBER: "/member",
+} as const;
+
+export default async function Home() {
+  const user = await getCurrentUser();
+  redirect(user ? HOME_BY_ROLE[user.role] : "/login");
 }

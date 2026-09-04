@@ -1,6 +1,7 @@
 'use server';
 import prisma  from '@/lib/prisma';
 
+import { requireRole, requireUser } from "@/lib/session";
 // Type definitions
 export interface ServiceInput {
     name: string;
@@ -21,6 +22,7 @@ export interface ServiceResponse {
 
 // 1. AddService
 export async function AddService(data: ServiceInput): Promise<ServiceResponse> {
+  await requireRole("ADMIN");
     try {
         // Validate inputs
         if (!data.name || !data.price || !data.duration) {
@@ -55,6 +57,7 @@ export async function AddService(data: ServiceInput): Promise<ServiceResponse> {
 
 // 2. GetAllServices
 export async function GetAllServices(): Promise<ServiceResponse[]> {
+  await requireUser();
     try {
         const services = await prisma.services.findMany({
             orderBy: { createdAt: 'desc' },
@@ -71,6 +74,7 @@ export async function GetAllServices(): Promise<ServiceResponse[]> {
 
 // 3. GetServiceById
 export async function GetServiceById(id: string): Promise<ServiceResponse | null> {
+  await requireUser();
     try {
         const service = await prisma.services.findUnique({
             where: { id },
@@ -91,6 +95,7 @@ export async function GetServiceById(id: string): Promise<ServiceResponse | null
 
 // 4. UpdateServiceById
 export async function UpdateServiceById(id: string, data: Partial<ServiceInput>): Promise<ServiceResponse> {
+  await requireRole("ADMIN");
     try {
         // Validate inputs
         if (data.price && data.price < 0) {
@@ -122,6 +127,7 @@ export async function UpdateServiceById(id: string, data: Partial<ServiceInput>)
 
 // 5. DeleteServiceById
 export async function DeleteServiceById(id: string): Promise<void> {
+  await requireRole("ADMIN");
     try {
         await prisma.services.delete({
             where: { id },

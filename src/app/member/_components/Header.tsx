@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import React from 'react'
 
 type Props = {
-    user_name: string
+    user_name?: string
 }
 
 const Header = ({

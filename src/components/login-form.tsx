@@ -1,45 +1,24 @@
-'use client'
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+"use client";
+
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useActionState } from "react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import React from "react"
-import { toast } from "sonner"
-import { LoginMember } from "@/action/auth.action"
-import { cookies } from "next/headers"
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { LoginWithCredentials } from "@/action/auth.action";
 
-export function LoginForm({
-  className,
-  ...props
-}: React.ComponentProps<"div">) {
-  const [credenials, setCredentials] = React.useState({
-    phone: "",
-    password: "",
-  })
-
-  const handleLogin = async (e: any) => {
-    e.preventDefault()
-    if (credenials.phone == '' || credenials.password == '') {
-      toast.error('Please fill all the required fields')
-      return
-    }
-    const res = await LoginMember(credenials)
-    if (res.success) {
-      toast.success('Logged in successfully');
-      localStorage.setItem('member_id', res.id ? res.id : '')
-      window.location.href = '/user'
-      return
-    }
-    toast.error("Incorrect phone or password")
-    return
-  }
+export function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
+  const callbackUrl = useSearchParams().get("callbackUrl") ?? "";
+  const [state, formAction, pending] = useActionState(LoginWithCredentials, null);
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
@@ -47,41 +26,59 @@ export function LoginForm({
         <CardHeader>
           <CardTitle className="text-3xl">Login</CardTitle>
           <CardDescription>
-            Enter your registered phone number below to login to your account
+            Enter your email and password to access your account.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form>
-            <div className="flex flex-col gap-6">
-              <div className="grid gap-3">
-                <Label htmlFor="email">Phone</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="Enter a valid phone number"
-                  required
-                  onChange={(e) => setCredentials({ ...credenials, phone: e.target.value })}
-                />
-              </div>
-              <div className="grid gap-3">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
+          <form action={formAction} className="flex flex-col gap-6">
+            <input type="hidden" name="callbackUrl" value={callbackUrl} />
 
-                </div>
-                <Input id="password" type="text" required placeholder="Enter your password" onChange={(e) => setCredentials({ ...credenials, password: e.target.value })} />
-              </div>
-              <div className="flex flex-col gap-3">
-                <Button type="submit" onClick={handleLogin} className="w-full">
-                  Login
-                </Button>
-              </div>
+            <div className="grid gap-3">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                placeholder="you@example.com"
+                required
+              />
             </div>
-            <div className="mt-4 text-center text-sm">
-              Don&apos;t have an account? Contact someone at Synergy Fitness
+
+            <div className="grid gap-3">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                placeholder="Enter your password"
+                required
+              />
+            </div>
+
+            {state && !state.success && (
+              <p
+                role="alert"
+                className="text-sm font-medium text-destructive"
+              >
+                {state.error}
+              </p>
+            )}
+
+            <Button type="submit" className="w-full" disabled={pending}>
+              {pending ? "Signing in…" : "Login"}
+            </Button>
+
+            <div className="text-center text-sm">
+              Don&apos;t have an account?{" "}
+              <Link href="/register" className="underline underline-offset-4">
+                Register
+              </Link>
             </div>
           </form>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

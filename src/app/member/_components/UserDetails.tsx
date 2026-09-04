@@ -17,7 +17,7 @@ const UserDetails = ({
         <CardHeader>
             <CardTitle className='text-muted-foreground'>Member Details</CardTitle>
             <CardAction>
-                <Link href={'/user/workout'}>
+                <Link href={'/member/workout'}>
                     <Button>
                         <Dumbbell className='mr-2'/>
                         View Exercises

@@ -4,6 +4,7 @@ import prisma  from '@/lib/prisma';
 // import { EnquiryType }from '@prisma/client';
 import { format, parse, isValid } from 'date-fns';
 
+import { requireRole } from "@/lib/session";
 type EnquiryType = 'call' | 'walkin' | 'instagram' | 'whatsapp';
 
 export interface EnquiryInput {
@@ -38,6 +39,7 @@ const validatePhone = (phone: bigint): boolean => {
 
 // 1. AddEnquiry
 export async function AddEnquiry(data: EnquiryInput): Promise<EnquiryResponse> {
+  await requireRole("ADMIN");
   try {
     // Validate inputs
     if (!data.name || !data.phone || !data.type) {
@@ -74,6 +76,7 @@ export async function AddEnquiry(data: EnquiryInput): Promise<EnquiryResponse> {
 
 // 2. GetEnquiryById
 export async function GetEnquiryById(id: string): Promise<EnquiryResponse | null> {
+  await requireRole("ADMIN");
   try {
     const enquiry = await prisma.enquiry.findUnique({
       where: { id },
@@ -95,6 +98,7 @@ export async function GetEnquiryById(id: string): Promise<EnquiryResponse | null
 
 // 3. GetAllEnquiry
 export async function GetAllEnquiry(): Promise<EnquiryResponse[]> {
+  await requireRole("ADMIN");
   try {
     const enquiries = await prisma.enquiry.findMany({
       orderBy: { createdAt: 'desc' },
@@ -112,6 +116,7 @@ export async function GetAllEnquiry(): Promise<EnquiryResponse[]> {
 
 // 4. GetEnquiryByFollowupDate
 export async function GetEnquiryByFollowupDate(date: string): Promise<EnquiryResponse[]> {
+  await requireRole("ADMIN");
   try {
     if (!validateDateFormat(date)) {
       throw new Error('Invalid date format. Use dd-MM-yyyy');
@@ -136,6 +141,7 @@ export async function GetEnquiryByFollowupDate(date: string): Promise<EnquiryRes
 
 // 5. DeleteEnquiry
 export async function DeleteEnquiry(id: string): Promise<void> {
+  await requireRole("ADMIN");
   try {
     await prisma.enquiry.delete({
       where: { id },
