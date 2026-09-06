@@ -105,7 +105,8 @@ export async function GenerateWorkoutPlan(
 
     const days = applyProgression(plan, idMap, durationWeeks);
 
-    const created = await prisma.$transaction(async (tx) => {
+    const created = await prisma.$transaction(
+      async (tx) => {
       // Only one ACTIVE plan at a time: a member following two plans at once
       // has no meaningful adherence number, which breaks the analytics.
       await tx.workoutPlan.updateMany({
@@ -113,28 +114,43 @@ export async function GenerateWorkoutPlan(
         data: { status: "ARCHIVED" },
       });
 
-      return tx.workoutPlan.create({
-        data: {
-          memberId,
-          title: plan.title,
-          goal: member.fitnessGoal!,
-          durationWeeks,
-          daysPerWeek: plan.days.length,
-          generatedBy: "AI",
-          aiRationale: [plan.rationale, plan.weeklyNotes].filter(Boolean).join("\n\n"),
-          modelUsed,
-          days: {
-            create: days.map((d) => ({
-              weekNumber: d.weekNumber,
-              dayNumber: d.dayNumber,
-              focus: d.focus,
-              isRestDay: d.isRestDay,
-              exercises: { create: d.exercises },
-            })),
+        return tx.workoutPlan.create({
+          data: {
+            memberId,
+            title: plan.title,
+            goal: member.fitnessGoal!,
+            durationWeeks,
+            daysPerWeek: plan.days.length,
+            generatedBy: "AI",
+            aiRationale: [plan.rationale, plan.weeklyNotes].filter(Boolean).join("\n\n"),
+            modelUsed,
+            days: {
+              create: days.map((d) => ({
+                weekNumber: d.weekNumber,
+                dayNumber: d.dayNumber,
+                focus: d.focus,
+                isRestDay: d.isRestDay,
+                exercises: { create: d.exercises },
+              })),
+            },
           },
-        },
-      });
-    });
+        });
+      },
+      {
+        // Prisma's default interactive-transaction timeout is 5s, and this
+        // write does not fit inside it: a 4-week plan is ~16 days of ~5
+        // exercises each, and every nested create is a round trip to Supabase.
+        // Measured at ~5.3s, so the default failed *after* the model had
+        // already been paid for — the plan generated, then vanished.
+        //
+        // Raising the timeout rather than splitting the write, because the
+        // atomicity is the point: archiving the previous ACTIVE plan and
+        // creating the replacement must not half-happen, or the member ends up
+        // with two active plans or none.
+        timeout: 30_000,
+        maxWait: 10_000,
+      }
+    );
 
     if (rejectedIds.length) {
       console.warn(
