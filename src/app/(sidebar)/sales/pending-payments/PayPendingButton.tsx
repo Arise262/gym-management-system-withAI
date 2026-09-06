@@ -52,7 +52,7 @@ export function PayPendingDialog({
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
                     <DialogTitle>Pay remaining due</DialogTitle>
-                    <p className="">Payment for {sale.service_name} of ₹{sale.due} by {sale.member_name}</p>
+                    <p className="">Payment for {sale.service_name} of ₱{sale.due} by {sale.member_name}</p>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-4 items-center gap-4">

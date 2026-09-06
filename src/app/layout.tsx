@@ -20,7 +20,7 @@ import { CookiesProvider } from "react-cookie";
 
 export const metadata: Metadata = {
   title: "Synergy Fitness & Wellness Club",
-  description: "Best gym in Akola",
+  description: "Best gym in Makati City",
 
 };
 

@@ -71,7 +71,7 @@ export  function SectionCards() {
         <CardHeader>
           <CardDescription>Sales in Last 7 Days</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            ₹{last7DaysAmount}
+            ₱{last7DaysAmount}
           </CardTitle>
           <CardDescription>Count: {salesIn7Days.length}</CardDescription>
         </CardHeader>
@@ -80,7 +80,7 @@ export  function SectionCards() {
         <CardHeader>
           <CardDescription>Sales in This Month</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            ₹{thisMonthAmount}
+            ₱{thisMonthAmount}
           </CardTitle>
           <CardDescription>Count: {salesInThisMonth.length}</CardDescription>
         </CardHeader>

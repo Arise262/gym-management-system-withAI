@@ -35,7 +35,7 @@ const page = () => {
     gender: "other",
     DOB: "",
     DOJ: "",
-    address: "Akola",
+    address: "Makati City",
   });
 
   const handleInputChange = (e: any, field: keyof FormState) => {
@@ -74,7 +74,7 @@ const page = () => {
         gender: "other",
         DOB: "",
         DOJ: "",
-        address: "Akola",
+        address: "Makati City",
       });
       window.location.reload();
       hideLoading();

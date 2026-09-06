@@ -59,10 +59,12 @@ const Invoice = ({
     const invoiceData = {
         invoiceNumber: "INV-2025-0042",
         date: "May 6, 2025",
+        // PLACEHOLDER — replace with the real branch details before deployment.
+        // These print on every customer invoice, so they must be correct.
         gym: {
             name: "Synergy Fitness & Wellness Club",
-            address: "Synergy Street, Near Bara Jyotirling Temple, Ranpise Nagar, Akola, Maharashtra, India 444001",
-            contact: "+91 8625862515 , +91 9922717137",
+            address: "Unit 2, Ground Floor, Sample Building, Barangay Poblacion, Makati City, Metro Manila, Philippines 1210",
+            contact: "+63 917 000 0000 , +63 2 8000 0000",
             email: "synergy.fit.help@gmail.com",
             website: ""
         },
@@ -121,24 +123,24 @@ const Invoice = ({
                     <div className="ml-2">
                         <div className="flex justify-between py-2">
                             <span>Total Amount:</span>
-                            <span>₹{saleData?.amount}</span>
+                            <span>₱{saleData?.amount}</span>
                         </div>
                         <div className="flex justify-between py-2">
                             <span>Discount:</span>
-                            <span>-₹{saleData?.discount}</span>
+                            <span>-₱{saleData?.discount}</span>
                         </div>
                         <div className="flex justify-between py-2 font-semibold">
                             <span>Amount After Discount:</span>
-                            <span>₹{saleData && (saleData?.amount - saleData?.discount)}</span>
+                            <span>₱{saleData && (saleData?.amount - saleData?.discount)}</span>
                         </div>
                         <div className="flex justify-between py-2">
                             <span>Paid:</span>
-                            <span>₹{saleData?.paid}</span>
+                            <span>₱{saleData?.paid}</span>
                         </div>
                         <div className="flex justify-between py-2 font-bold text-lg border-t border-gray-200 mt-2 pt-2">
                             <span>Balance Due:</span>
                             <span >
-                                ₹{saleData && (saleData?.amount - saleData?.discount - saleData?.paid)}</span>
+                                ₱{saleData && (saleData?.amount - saleData?.discount - saleData?.paid)}</span>
                         </div>
                     </div>
                 </div>
