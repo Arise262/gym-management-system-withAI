@@ -1,30 +1,70 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
-import LogoutButton from "@/components/custom/LogoutButton"
-import { requireRole } from "@/lib/session"
+import { format } from "date-fns";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import LogoutButton from "@/components/custom/LogoutButton";
+import { TrainerSchedule, type BookingRow } from "@/components/booking-lists";
+import { requireRole } from "@/lib/session";
+import { GetTrainerBookings } from "@/action/booking.action";
 
-// Placeholder landing so TRAINER sessions have somewhere to go. The real
-// trainer dashboard, schedule and assigned-members views land in Phase 6.
 export default async function Page() {
-  const user = await requireRole("TRAINER")
+  const user = await requireRole("TRAINER");
+  const bookings = await GetTrainerBookings();
+
+  const today = format(new Date(), "dd-MM-yyyy");
+  const upcoming = bookings.filter((b) => !["COMPLETED", "CANCELLED", "NO_SHOW"].includes(b.status));
+
+  const rows: BookingRow[] = bookings.map((b) => ({
+    id: b.id,
+    date: b.date,
+    startTime: b.startTime,
+    endTime: b.endTime,
+    status: b.status,
+    notes: b.notes,
+    counterparty: b.member.name,
+    // Member.phone is BigInt, which cannot cross into a client component —
+    // it is not JSON-serialisable. Stringify at the boundary.
+    counterpartyDetail: `${b.member.memberCode} · ${b.member.phone.toString()}`,
+  }));
 
   return (
-    <div className="p-4 grid grid-cols-1 gap-4 max-w-xl mx-auto">
+    <div className="mx-auto flex max-w-3xl flex-col gap-4 p-4">
       <Card>
         <CardHeader>
           <CardTitle>Trainer area</CardTitle>
+          <CardDescription>
+            Signed in as <span className="text-foreground">{user.email}</span>.
+          </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
-          <p className="text-muted-foreground text-sm">
-            Signed in as <span className="text-foreground">{user.email}</span>.
-          </p>
-          <p className="text-muted-foreground text-sm">
-            Your schedule, assigned members and chat arrive in a later phase.
-          </p>
+          <div className="flex gap-6">
+            <div>
+              <div className="text-2xl font-semibold tabular-nums">
+                {bookings.filter((b) => b.date === today && b.status !== "CANCELLED").length}
+              </div>
+              <p className="text-muted-foreground text-xs">Sessions today</p>
+            </div>
+            <div>
+              <div className="text-2xl font-semibold tabular-nums">{upcoming.length}</div>
+              <p className="text-muted-foreground text-xs">Open bookings</p>
+            </div>
+            <div>
+              <div className="text-2xl font-semibold tabular-nums">
+                {bookings.filter((b) => b.status === "PENDING").length}
+              </div>
+              <p className="text-muted-foreground text-xs">Awaiting your confirmation</p>
+            </div>
+          </div>
           <Separator />
-          <LogoutButton className="text-red-500 w-fit" />
+          <LogoutButton className="w-fit text-red-500" />
         </CardContent>
       </Card>
+
+      <div>
+        <h2 className="text-lg font-semibold">Your schedule</h2>
+        <p className="text-muted-foreground text-sm">Soonest first.</p>
+      </div>
+
+      <TrainerSchedule bookings={rows} />
     </div>
-  )
+  );
 }
