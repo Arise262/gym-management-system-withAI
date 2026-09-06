@@ -53,6 +53,11 @@ const data = {
       icon: IconChartBar,
     },
     {
+      title: "Retention",
+      url: "/retention",
+      icon: IconUserCancel,
+    },
+    {
       title: "Enquiries",
       url: "/enquiries",
       icon: IconSearch,

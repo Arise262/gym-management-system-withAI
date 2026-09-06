@@ -12,7 +12,8 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
     "db:seed:demo": "tsx prisma/seed-demo.ts",
-    "db:seed:exercises": "tsx prisma/seed-exercises.ts"
+    "db:seed:exercises": "tsx prisma/seed-exercises.ts",
+    "db:seed:retention": "tsx prisma/seed-retention.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.123.0",
