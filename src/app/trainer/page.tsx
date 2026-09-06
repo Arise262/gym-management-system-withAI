@@ -1,5 +1,8 @@
+import Link from "next/link";
+import { IconMessage } from "@tabler/icons-react";
 import { format } from "date-fns";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import LogoutButton from "@/components/custom/LogoutButton";
 import { TrainerSchedule, type BookingRow } from "@/components/booking-lists";
@@ -55,7 +58,15 @@ export default async function Page() {
             </div>
           </div>
           <Separator />
-          <LogoutButton className="w-fit text-red-500" />
+          <div className="flex items-center gap-2">
+            <Link href="/trainer/messages">
+              <Button variant="outline" size="sm">
+                <IconMessage className="mr-1 size-4" />
+                Messages
+              </Button>
+            </Link>
+            <LogoutButton className="w-fit text-red-500" />
+          </div>
         </CardContent>
       </Card>
 

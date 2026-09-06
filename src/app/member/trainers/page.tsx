@@ -3,6 +3,7 @@ import { IconArrowLeft, IconCalendarEvent } from "@tabler/icons-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { MessageTrainerButton } from "@/components/message-trainer-button";
 import { GetTrainers } from "@/action/booking.action";
 
 const DAY_LABEL = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -54,9 +55,12 @@ export default async function TrainersPage() {
                     <CardTitle>{t.name}</CardTitle>
                     <CardDescription>₱{t.hourlyRate.toLocaleString()} per hour</CardDescription>
                   </div>
-                  <Link href={`/member/trainers/${t.id}`}>
-                    <Button size="sm">Book</Button>
-                  </Link>
+                  <div className="flex gap-2">
+                    <MessageTrainerButton trainerId={t.id} />
+                    <Link href={`/member/trainers/${t.id}`}>
+                      <Button size="sm">Book</Button>
+                    </Link>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
