@@ -95,7 +95,9 @@ export async function gatherSignals(
 
   const assignedByMember = new Map<string, number>();
   const targetByMember = new Map<string, number>();
+  const hasPlan = new Set<string>();
   for (const plan of plans) {
+    hasPlan.add(plan.memberId);
     // Only weeks that have actually elapsed count as assigned. Crediting a
     // member with missing sessions they were never yet due to do would mark
     // every new plan as non-adherent on the day it is generated.
@@ -128,6 +130,7 @@ export async function gatherSignals(
       unpaidPesos: ms?.unpaid ?? 0,
       sessionsCompleted: completedByMember.get(m.id) ?? 0,
       sessionsAssigned: assignedByMember.get(m.id) ?? 0,
+      hasActivePlan: hasPlan.has(m.id),
       // A member with no parseable join date is treated as established rather
       // than new, so a bad DOJ cannot hide a real risk behind the grace period.
       tenureDays: joined ? Math.max(0, differenceInCalendarDays(asOf, joined)) : 9999,

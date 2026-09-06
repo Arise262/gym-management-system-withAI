@@ -8,9 +8,14 @@ import {
   type PlanForView,
 } from "@/components/workout-plan-view";
 import { GetActivePlan, GetMyFitnessProfile } from "@/action/workout-plan.action";
+import { GetLoggedPlanDayIds } from "@/action/workout-session.action";
 
 export default async function Page() {
-  const [plan, profile] = await Promise.all([GetActivePlan(), GetMyFitnessProfile()]);
+  const [plan, profile, loggedDayIds] = await Promise.all([
+    GetActivePlan(),
+    GetMyFitnessProfile(),
+    GetLoggedPlanDayIds(),
+  ]);
 
   const profileComplete = Boolean(
     profile?.fitnessGoal && profile?.experienceLevel && profile?.workoutDaysPerWeek
@@ -62,7 +67,7 @@ export default async function Page() {
           </CardContent>
         </Card>
       ) : (
-        <WorkoutPlanView plan={plan as unknown as PlanForView} />
+        <WorkoutPlanView plan={plan as unknown as PlanForView} loggedDayIds={loggedDayIds} />
       )}
     </div>
   );

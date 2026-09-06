@@ -3,7 +3,8 @@
 import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { IconSparkles, IconBarbell, IconMoon } from "@tabler/icons-react";
+import Link from "next/link";
+import { IconSparkles, IconBarbell, IconMoon, IconCircleCheck, IconPencilPlus } from "@tabler/icons-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -74,7 +75,15 @@ export function GenerateButton({ label }: { label: string }) {
   );
 }
 
-export function WorkoutPlanView({ plan }: { plan: PlanForView }) {
+export function WorkoutPlanView({
+  plan,
+  loggedDayIds = [],
+}: {
+  plan: PlanForView;
+  /** Plan days this member has already logged, so done work reads as done. */
+  loggedDayIds?: string[];
+}) {
+  const logged = new Set(loggedDayIds);
   const weeks = [...new Set(plan.days.map((d) => d.weekNumber))].sort((a, b) => a - b);
   const [week, setWeek] = useState(String(weeks[0] ?? 1));
 
@@ -135,6 +144,12 @@ export function WorkoutPlanView({ plan }: { plan: PlanForView }) {
                         <IconBarbell className="size-4 text-muted-foreground" />
                       )}
                       Day {day.dayNumber} — {day.focus}
+                      {logged.has(day.id) && (
+                        <Badge className="ml-auto bg-emerald-600 text-white hover:bg-emerald-600">
+                          <IconCircleCheck className="mr-1 size-3" />
+                          Logged
+                        </Badge>
+                      )}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -175,6 +190,14 @@ export function WorkoutPlanView({ plan }: { plan: PlanForView }) {
                           </li>
                         ))}
                       </ol>
+                    )}
+                    {!day.isRestDay && (
+                      <Link href={`/member/workout-plan/log/${day.id}`} className="mt-4 block">
+                        <Button variant={logged.has(day.id) ? "secondary" : "default"} className="w-full">
+                          <IconPencilPlus className="mr-2 size-4" />
+                          {logged.has(day.id) ? "Edit today's log" : "Log this workout"}
+                        </Button>
+                      </Link>
                     )}
                   </CardContent>
                 </Card>

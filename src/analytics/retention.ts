@@ -37,6 +37,12 @@ export type RetentionSignals = {
   /** Plan adherence: sessions actually completed vs scheduled to date. */
   sessionsCompleted: number;
   sessionsAssigned: number;
+  /**
+   * Whether an ACTIVE plan exists at all. Distinct from sessionsAssigned > 0:
+   * a plan generated today has nothing due yet, which is not the same thing as
+   * having no plan, and the dashboard must not report it as such.
+   */
+  hasActivePlan: boolean;
   /** Days since joining. Guards against judging a member who just arrived. */
   tenureDays: number;
 };
@@ -200,8 +206,14 @@ function scoreMembershipExpiry(s: RetentionSignals): { n: number; detail: string
 }
 
 function scorePlanAdherence(s: RetentionSignals): { n: number; detail: string } {
-  if (s.sessionsAssigned === 0) {
+  if (!s.hasActivePlan) {
     return { n: 0, detail: "no plan assigned" };
+  }
+  // A plan exists but its first week has not elapsed. Nothing is owed yet, so
+  // there is no adherence to judge — reporting 0/0 as a failure would punish a
+  // member for a plan they were given this morning.
+  if (s.sessionsAssigned === 0) {
+    return { n: 0, detail: "plan just started — nothing due yet" };
   }
   const rate = s.sessionsCompleted / s.sessionsAssigned;
   return {
