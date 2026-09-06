@@ -29,8 +29,14 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // suppressHydrationWarning on <html> is required by next-themes, not a
+  // workaround for a bug of ours. Its script runs before React hydrates and
+  // writes class and style="color-scheme" onto <html> so the page never
+  // flashes the wrong theme — which by definition makes the client markup
+  // differ from the server's. The suppression is one level deep, so a genuine
+  // mismatch anywhere inside <html> is still reported.
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <meta property="og:image" content="/synergy.png"/>
         <meta property="og:image:width" content="1200" />
