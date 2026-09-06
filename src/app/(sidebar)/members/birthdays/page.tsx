@@ -66,7 +66,7 @@ const page = (props: Props) => {
                     SelectedMember &&
                     <CardContent className='space-y-4'>
                         <p>{message}</p>
-                        <Link className='text-primary mt-4' href={`https://api.whatsapp.com/send?phone=91${SelectedMember?.phone}&text=${message}`} target='_blank'>
+                        <Link className='text-primary mt-4' href={`https://api.whatsapp.com/send?phone=63${SelectedMember?.phone}&text=${encodeURIComponent(message)}`} target='_blank'>
                             <Button>
                                 Send
                             </Button>

@@ -79,8 +79,14 @@ const SalesPage = (props: Props) => {
 
       onClickGetRow: (row: any) => {
         console.log(row)
-        const message = `Hi ${row.member_name}, your invoice for ${row.service_name} is attached with this message, thank you for choosing us. Stay healthy Stay strong. %0A%0Ahttps://gym-prisma.vercel.app/invoices/${row.id} %0A%0A -Team Synergy 💪🏻`
-        window.open(`https://api.whatsapp.com/send?phone=91${row.member.phone}&text=${message}`)
+        const message = `Hi ${row.member_name}, your invoice for ${row.service_name} is attached with this message, thank you for choosing us. Stay healthy Stay strong. 
+
+https://gym-prisma.vercel.app/invoices/${row.id} 
+
+ -Team Synergy 💪🏻`
+        // 63 is the Philippines; encodeURIComponent so the emoji, newlines and
+        // any "&" in a member or service name survive the query string.
+        window.open(`https://api.whatsapp.com/send?phone=63${row.member.phone}&text=${encodeURIComponent(message)}`)
       }
 
     }

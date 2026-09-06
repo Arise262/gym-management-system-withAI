@@ -103,7 +103,7 @@ const page = (props: Props) => {
                     SelectedSale &&
                     <CardContent className='space-y-4'>
                         <p>{message}</p>
-                        <Link className='text-primary mt-4' href={`https://api.whatsapp.com/send?phone=91${SelectedSale?.member_phone}&text=${message}`} target='_blank'>
+                        <Link className='text-primary mt-4' href={`https://api.whatsapp.com/send?phone=63${SelectedSale?.member_phone}&text=${encodeURIComponent(message)}`} target='_blank'>
                             <Button>
                                 Send
                             </Button>
@@ -128,4 +128,4 @@ const page = (props: Props) => {
 
 export default page
 
-// https://api.whatsapp.com/send?phone=918698969798&text=Hello%20%0ABrother
+// https://api.whatsapp.com/send?phone=639171234567&text=Hello%20%0ABrother

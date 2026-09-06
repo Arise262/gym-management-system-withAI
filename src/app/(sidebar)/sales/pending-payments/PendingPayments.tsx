@@ -55,9 +55,11 @@ const PendingPayments = ({ }: Props) => {
             header: 'Message',
             cellContent: <Button variant="destructive" className='cursor-pointer'><IconSend size={16} /></Button>,
             onClickGetRow: (row: any) => {
-                console.log(row)
-                const message = `Hi ${row.member_name}, your payment for ${row.service_name} of ₹${row.due} is due, thank you for choosing us. Stay healthy Stay strong.%0A%0A -Team Synergy 💪🏻`
-                window.open(`https://api.whatsapp.com/send?phone=91${row.member_phone}&text=${message}`)
+                // 63 is the Philippines. encodeURIComponent is required, not
+                // cosmetic: the peso sign, the emoji, and any "&" in a member
+                // or service name all corrupt the query string raw.
+                const message = `Hi ${row.member_name}, your payment for ${row.service_name} of ₱${row.due} is due, thank you for choosing us. Stay healthy Stay strong.\n\n -Team Synergy 💪🏻`
+                window.open(`https://api.whatsapp.com/send?phone=63${row.member_phone}&text=${encodeURIComponent(message)}`)
             },
             // cellContentGetRow: (row: any) => <Button variant="secondary" className='cursor-pointer'><IconSend size={16} /></Button>,
         },
@@ -72,7 +74,7 @@ const PendingPayments = ({ }: Props) => {
             <Card>
                 <CardHeader>
                     <CardTitle>Pending Payments</CardTitle>
-                    <CardAction className="text-muted-foreground">Total Amount: ₹{(data?.total || 0)}</CardAction>
+                    <CardAction className="text-muted-foreground">Total Amount: ₱{(data?.total || 0)}</CardAction>
                 </CardHeader>
                 <CardContent>
                     <DataTable dataRows={data?.sales || []} isLoading={isLoading} columns={columns} actionColumns={actions} />
