@@ -2,6 +2,7 @@ import { addDays, differenceInCalendarDays, format } from "date-fns";
 import prisma from "@/lib/prisma";
 import { parseGymDate } from "@/analytics/signals";
 import { recomputeRetentionScores } from "@/analytics/recompute";
+import { computeEngagementMetrics } from "@/analytics/engagement";
 import { notify, notifyAdmins, notifyMember, retryUnsentEmails } from "@/lib/notifications";
 
 /**
@@ -38,6 +39,8 @@ export type DailyRunReport = {
   workoutReminders: { candidates: number; notified: number };
   retention: { scored: number; atRisk: number; adminAlerts: number; nudges: number };
   progress: { ran: boolean; notified: number };
+  /** Weekly EngagementMetric rows (guide module 10). Recomputed every run: two round trips. */
+  engagement: { weeks: number; members: number; rows: number };
   emailRetry: { attempted: number; sent: number };
   durationMs: number;
 };
@@ -332,6 +335,7 @@ export async function runDailyJob(asOf = new Date(), opts: DailyRunOptions = {})
   const workoutReminders = await sendWorkoutReminders(today);
   const retention = await runRetentionAndNudges(today, asOf);
   const progress = await sendProgressUpdates(today, opts.forceWeekly);
+  const engagement = await computeEngagementMetrics(today);
   const emailRetry = await retryUnsentEmails(asOf);
 
   return {
@@ -342,6 +346,7 @@ export async function runDailyJob(asOf = new Date(), opts: DailyRunOptions = {})
     workoutReminders,
     retention,
     progress,
+    engagement,
     emailRetry,
     durationMs: Date.now() - started,
   };

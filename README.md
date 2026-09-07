@@ -63,8 +63,11 @@ A full-featured, modern Gym Management Platform built with **Next.js**, **TypeSc
 - Add new services offered by the gym (e.g., personal training, Zumba, etc.)
 
 ### 📊 Dashboard & Analytics
-- Summary charts
-- Performance insights
+- Administrative dashboard: KPI row (members, billed vs collected, outstanding balance, check-ins, members at risk, engagement score, active plans, trainer sessions), 30-day attendance, 6-month revenue, workouts per week, retention risk bands, memberships ending this week, pending payments
+- Member progress page: workouts per week, week streak, plan adherence, training volume, body-weight trend, weekly engagement score
+- Trainer roster: each client's plan, days since their last logged workout, sessions this month, engagement score
+- Engagement monitoring: one `EngagementMetric` row per member per week (attendance, plan consistency, 0–100 score), recomputed by the daily job
+- Every chart has a plain-table twin, a validated colour-blind-safe palette, and light/dark variants
 - Custom tools: BMI, BMR, WHR calculators
 
 ### ✅ To-Do & Task Management

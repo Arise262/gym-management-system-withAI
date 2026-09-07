@@ -10,6 +10,8 @@ import { requireRole } from "@/lib/session";
 import { hasMailKey } from "@/lib/mail";
 import { GetTrainerBookings } from "@/action/booking.action";
 import { GetUnreadCount } from "@/action/notification.action";
+import { GetTrainerClients } from "@/action/dashboard.action";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { NotificationBell } from "@/components/notification-bell";
 import { AnnouncementForm } from "@/components/announcement-form";
 
@@ -17,6 +19,7 @@ export default async function Page() {
   const user = await requireRole("TRAINER");
   const bookings = await GetTrainerBookings();
   const unread = await GetUnreadCount();
+  const clients = await GetTrainerClients();
 
   const today = format(new Date(), "dd-MM-yyyy");
   const upcoming = bookings.filter((b) => !["COMPLETED", "CANCELLED", "NO_SHOW"].includes(b.status));
@@ -86,6 +89,56 @@ export default async function Page() {
       </div>
 
       <TrainerSchedule bookings={rows} />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Your clients</CardTitle>
+          <CardDescription>
+            Everyone who has booked you or trains on a plan you own — the longest since a logged workout first.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {clients.length === 0 ? (
+            <p className="text-muted-foreground text-sm">No clients yet. They appear here once a member books you.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Member</TableHead>
+                    <TableHead>Plan</TableHead>
+                    <TableHead>Last workout</TableHead>
+                    <TableHead className="text-right">Sessions this month</TableHead>
+                    <TableHead className="text-right">Engagement</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {clients.map((c) => (
+                    <TableRow key={c.memberId}>
+                      <TableCell>
+                        <span className="font-medium">{c.name}</span>{" "}
+                        <span className="text-muted-foreground">{c.memberCode}</span>
+                      </TableCell>
+                      <TableCell className="max-w-[14rem] truncate">{c.activePlan ?? <span className="text-muted-foreground">none</span>}</TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {c.daysSinceWorkout === null ? (
+                          <span className="text-muted-foreground">never logged</span>
+                        ) : c.daysSinceWorkout === 0 ? (
+                          "today"
+                        ) : (
+                          <span className={c.daysSinceWorkout >= 7 ? "text-amber-700 dark:text-amber-400" : ""}>{c.daysSinceWorkout} days ago</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">{c.sessionsThisMonth}</TableCell>
+                      <TableCell className="text-right tabular-nums">{c.engagementScore ?? "—"}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <AnnouncementForm
         audience="members who have booked you or train on a plan you own"

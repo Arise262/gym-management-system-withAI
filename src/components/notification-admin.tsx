@@ -53,6 +53,7 @@ function ReportSummary({ r }: { r: DailyRunReport }) {
       `${r.retention.scored} scored, ${r.retention.atRisk} at risk → ${r.retention.adminAlerts} admin alerts, ${r.retention.nudges} member nudges`,
     ],
     ["Progress updates", r.progress.ran ? `${r.progress.notified} sent` : "skipped (not Monday)"],
+    ["Engagement metrics", `${r.engagement.rows} rows over ${r.engagement.weeks} weeks for ${r.engagement.members} members`],
     ["Email retry", `${r.emailRetry.sent} of ${r.emailRetry.attempted} resent`],
     ["Duration", `${r.durationMs} ms`],
   ];

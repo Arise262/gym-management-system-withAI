@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { IconLocation } from '@tabler/icons-react'
-import { Calendar, CalendarCheck, CalendarPlus, CreditCard, Dumbbell, Mail, MessageCircle, Phone, Sparkles } from 'lucide-react'
+import { Calendar, CalendarCheck, CalendarPlus, CreditCard, Dumbbell, Mail, MessageCircle, Phone, Sparkles, TrendingUp } from 'lucide-react'
 import Link from 'next/link'
 import React from 'react'
 
@@ -22,6 +22,12 @@ const UserDetails = ({
                         <Button>
                             <Sparkles className='mr-2' size={16}/>
                             My Plan
+                        </Button>
+                    </Link>
+                    <Link href={'/member/progress'}>
+                        <Button variant='outline'>
+                            <TrendingUp className='mr-2' size={16}/>
+                            Progress
                         </Button>
                     </Link>
                     <Link href={'/member/chat'}>
