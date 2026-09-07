@@ -76,6 +76,13 @@ A full-featured, modern Gym Management Platform built with **Next.js**, **TypeSc
 ### 🛠 Tools Section
 - Health metric calculators (BMI, BMR, WHR)
 
+### 📱 Installable app (PWA)
+- Installs to the home screen on Android, iOS and desktop: web app manifest with maskable icons and shortcuts, an in-app install card (or the Share → Add to Home Screen hint on iOS)
+- Hand-written service worker (`public/sw.js`): build assets cache-first, images stale-while-revalidate with a cap, navigations network-first with an `/offline` fallback
+- Pages behind a login are never cached on the device, so a shared phone cannot replay someone's plan or payments
+- One-tap "new version ready" reload when a deploy ships; offline/online toasts
+- Regenerate icons with `node scripts/generate-icons.mjs`
+
 ### 🔔 Notifications & scheduled jobs
 - In-app notifications panel for members, trainers and admins (bell with unread badge)
 - Email delivery through Brevo's transactional API, with retry for anything that did not go out

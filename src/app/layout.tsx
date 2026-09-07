@@ -1,27 +1,51 @@
-import type { Metadata } from "next";
-// import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
-import Loader from "@/components/custom/Loader";
 import { LoadingProvider } from "@/hooks/use-loading";
 import GlobalLoader from "@/components/custom/Loader";
-import { CookiesProvider } from "react-cookie";
+import { Pwa } from "@/components/pwa";
 
-// const geistSans = Geist({
-//   variable: "--font-geist-sans",
-//   subsets: ["latin"],
-// });
-
-// const geistMono = Geist_Mono({
-//   variable: "--font-geist-mono",
-//   subsets: ["latin"],
-// });
+const APP_NAME = "Synergy Fitness & Wellness Club";
 
 export const metadata: Metadata = {
-  title: "Synergy Fitness & Wellness Club",
-  description: "Best gym in Makati City",
+  title: { default: APP_NAME, template: `%s · Synergy Fitness` },
+  description: "Your workout plan, trainer bookings, payments and progress — Synergy Fitness, Makati City.",
+  applicationName: "Synergy Fitness",
+  manifest: "/manifest.json",
+  // iOS has no manifest support for these; it reads the meta tags instead.
+  appleWebApp: {
+    capable: true,
+    title: "Synergy",
+    statusBarStyle: "default",
+  },
+  formatDetection: { telephone: false },
+  // Next 15 emits the standard `mobile-web-app-capable` for appleWebApp.capable;
+  // older iOS still looks for the Apple-prefixed name, so ship both.
+  other: { "apple-mobile-web-app-capable": "yes" },
+  icons: {
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
+  openGraph: {
+    title: APP_NAME,
+    description: "Best gym in Makati City",
+    images: [{ url: "/synergy.png", width: 1200, height: 627 }],
+  },
+};
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  // Lets the app paint under the iPhone notch/home bar when installed.
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#09090b" },
+  ],
 };
 
 export default function RootLayout({
@@ -37,29 +61,19 @@ export default function RootLayout({
   // mismatch anywhere inside <html> is still reported.
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <meta property="og:image" content="/synergy.png"/>
-        <meta property="og:image:width" content="1200" />
-        <meta property="og:image:height" content="627" />
-        <link rel="manifest" href="/manifest.json" />
-        <link rel="apple-touch-icon" href="/fav.png"/>
-      </head>
-      <body
-        className={`antialiased`}
-      >
-
+      <body className={`antialiased`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
-          >
-        
+        >
           <LoadingProvider>
             <GlobalLoader />
             {children}
           </LoadingProvider>
           <Toaster />
+          <Pwa />
         </ThemeProvider>
       </body>
     </html>

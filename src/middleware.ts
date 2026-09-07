@@ -6,7 +6,7 @@ import { authConfig } from "@/lib/auth.config";
 const { auth } = NextAuth(authConfig);
 
 /** Reachable without a session. Everything else is denied by default. */
-const PUBLIC_PREFIXES = ["/login", "/register", "/invoices"];
+const PUBLIC_PREFIXES = ["/login", "/register", "/invoices", "/offline"];
 
 /** Where each role lands after login, and where it gets sent when it strays. */
 const HOME_BY_ROLE = {
@@ -65,8 +65,10 @@ export const config = {
      *  - /api/auth/*   (Auth.js internals)
      *  - /api/webhooks/* (PayMongo — authenticated by signature, not session)
      *  - /api/cron/*   (authenticated by CRON_SECRET header)
+     *  - /sw.js, /icons/*, /offline (PWA shell — must load with no session, and
+     *    the service worker fetches sw.js with no cookies at all)
      *  - Next.js internals and static files
      */
-    "/((?!api/auth|api/webhooks|api/cron|_next/static|_next/image|favicon.ico|fav.png|manifest.json|.*\\.(?:png|jpg|jpeg|svg|gif|webp|ico)$).*)",
+    "/((?!api/auth|api/webhooks|api/cron|sw.js|icons/|offline|_next/static|_next/image|favicon.ico|fav.png|manifest.json|.*\\.(?:png|jpg|jpeg|svg|gif|webp|ico)$).*)",
   ],
 };
