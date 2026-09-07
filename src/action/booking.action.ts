@@ -7,6 +7,7 @@ import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { requireMemberId, requireRole, requireUser } from "@/lib/session";
 import { SLOT_MINUTES, slotsForDate, toMinutes, type Slot } from "@/lib/booking-slots";
+import { notifyMember, notifyTrainer } from "@/lib/notifications";
 
 /**
  * Personal-training bookings.
@@ -170,6 +171,22 @@ export async function CreateBooking(
           data: { memberId, trainerId, date: dateStr, startTime, endTime, notes, status: "PENDING" },
         });
 
+    // Tell the trainer. notify() never throws, so a mail outage cannot undo a
+    // booking that has already been written.
+    const member = await prisma.member.findUnique({ where: { id: memberId }, select: { name: true } });
+    await notifyTrainer(trainerId, {
+      type: "BOOKING_REQUESTED",
+      title: `${member?.name ?? "A member"} requested ${dateStr} at ${startTime}`,
+      body:
+        `${member?.name ?? "A member"} asked for a session on ${dateStr} from ${startTime} to ${endTime}.` +
+        (notes ? ` Note: "${notes}".` : "") +
+        " Confirm it from your schedule.",
+      channel: "BOTH",
+      actionUrl: "/trainer",
+      metadata: { bookingId: booking.id },
+      dedupeKey: `booking-requested:${booking.id}:${booking.updatedAt.getTime()}`,
+    });
+
     revalidatePath("/member/bookings");
     revalidatePath("/trainer");
     return { success: true, bookingId: booking.id };
@@ -241,7 +258,16 @@ export async function CancelBooking(bookingId: string): Promise<BookingActionRes
 
   const booking = await prisma.booking.findUnique({
     where: { id: bookingId },
-    select: { id: true, memberId: true, trainerId: true, status: true },
+    select: {
+      id: true,
+      memberId: true,
+      trainerId: true,
+      status: true,
+      date: true,
+      startTime: true,
+      member: { select: { name: true } },
+      trainer: { select: { name: true } },
+    },
   });
   if (!booking) return { success: false, error: "That booking no longer exists." };
 
@@ -256,6 +282,29 @@ export async function CancelBooking(bookingId: string): Promise<BookingActionRes
   }
 
   await prisma.booking.update({ where: { id: booking.id }, data: { status: "CANCELLED" } });
+
+  // Tell the other side. A member cancelling informs the trainer; a trainer
+  // (or admin) cancelling informs the member.
+  const when = `${booking.date} at ${booking.startTime}`;
+  if (booking.memberId === user.memberId) {
+    await notifyTrainer(booking.trainerId, {
+      type: "BOOKING_CANCELLED",
+      title: `${booking.member.name} cancelled ${when}`,
+      body: `${booking.member.name} cancelled their session on ${when}. The slot is open again.`,
+      channel: "BOTH",
+      actionUrl: "/trainer",
+      metadata: { bookingId: booking.id },
+    });
+  } else {
+    await notifyMember(booking.memberId, {
+      type: "BOOKING_CANCELLED",
+      title: `Your session on ${when} was cancelled`,
+      body: `${booking.trainer.name} had to cancel your session on ${when}. Sorry about that — you can pick another slot from the trainers page.`,
+      channel: "BOTH",
+      actionUrl: "/member/trainers",
+      metadata: { bookingId: booking.id },
+    });
+  }
 
   revalidatePath("/member/bookings");
   revalidatePath("/trainer");
@@ -278,7 +327,16 @@ export async function SetBookingStatus(
 
   const booking = await prisma.booking.findUnique({
     where: { id: bookingId },
-    select: { id: true, trainerId: true },
+    select: {
+      id: true,
+      trainerId: true,
+      memberId: true,
+      status: true,
+      date: true,
+      startTime: true,
+      endTime: true,
+      trainer: { select: { name: true } },
+    },
   });
   if (!booking) return { success: false, error: "That booking no longer exists." };
 
@@ -288,6 +346,27 @@ export async function SetBookingStatus(
   }
 
   await prisma.booking.update({ where: { id: booking.id }, data: { status } });
+
+  const when = `${booking.date} at ${booking.startTime}`;
+  if (status === "CONFIRMED" && booking.status !== "CONFIRMED") {
+    await notifyMember(booking.memberId, {
+      type: "BOOKING_CONFIRMED",
+      title: `Session confirmed: ${when}`,
+      body: `${booking.trainer.name} confirmed your session on ${booking.date}, ${booking.startTime}–${booking.endTime}. See you there.`,
+      channel: "BOTH",
+      actionUrl: "/member/bookings",
+      metadata: { bookingId: booking.id },
+    });
+  } else if (status === "CANCELLED" && booking.status !== "CANCELLED") {
+    await notifyMember(booking.memberId, {
+      type: "BOOKING_CANCELLED",
+      title: `Your session on ${when} was cancelled`,
+      body: `${booking.trainer.name} had to cancel your session on ${when}. Sorry about that — you can pick another slot from the trainers page.`,
+      channel: "BOTH",
+      actionUrl: "/member/trainers",
+      metadata: { bookingId: booking.id },
+    });
+  }
 
   revalidatePath("/trainer");
   revalidatePath("/member/bookings");

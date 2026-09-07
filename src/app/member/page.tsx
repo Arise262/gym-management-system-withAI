@@ -8,15 +8,17 @@ import Sales from './_components/Sales'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
 import LogoutButton from '@/components/custom/LogoutButton'
+import { GetUnreadCount } from '@/action/notification.action'
 
 // Server component: the member is resolved from the session inside the action,
 // so there is no client fetch and no id in the browser to tamper with.
 export default async function Page() {
   const data = await getAllDetailsOfMember()
+  const unread = await GetUnreadCount()
 
   return (
     <div className='p-4 grid grid-cols-1 gap-4 max-w-xl mx-auto'>
-      <Header user_name={data.user?.name} />
+      <Header user_name={data.user?.name} unread={unread} />
       <UserDetails user={data.user} />
       <AttendanceSum attendance={data.allAttendanceOfMember} />
       <Sales activeSales={data.activeSales} expiredSales={data.inActiveSales} />

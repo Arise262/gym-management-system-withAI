@@ -1,34 +1,23 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import type { Prisma, RiskLevel } from "@prisma/client";
+import type { RiskLevel } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
-import { gatherSignals } from "@/analytics/signals";
-import { scoreRetention, type ScoredFactor } from "@/analytics/retention";
+import { recomputeRetentionScores } from "@/analytics/recompute";
+import type { ScoredFactor } from "@/analytics/retention";
 
 export type RecomputeResult =
   | { success: true; scored: number; byLevel: Record<RiskLevel, number> }
   | { success: false; error: string };
 
 /**
- * Scores stored one row per member per day.
- *
- * `RetentionScore` is uniquely keyed on (memberId, scoreDate), so the date has
- * to be pinned to midnight rather than left at `now()` — otherwise re-running
- * the job an hour later writes a second row for the same day instead of
- * updating the first, and the history stops being a daily series.
- */
-function startOfToday(asOf: Date): Date {
-  return new Date(Date.UTC(asOf.getUTCFullYear(), asOf.getUTCMonth(), asOf.getUTCDate()));
-}
-
-/**
  * Recomputes retention risk for every member.
  *
  * Cheap enough to run on demand from the dashboard: it is arithmetic over five
- * queries, with no model call anywhere in the path. Phase 9 will also call it
- * from the nightly cron.
+ * queries, with no model call anywhere in the path. The nightly cron
+ * (/api/cron/daily) runs the same recomputeRetentionScores() and then raises
+ * RETENTION_ALERT notifications for anyone HIGH or CRITICAL.
  */
 export async function RecomputeRetentionScores(): Promise<RecomputeResult> {
   // ADMIN only, matching middleware.ts: /retention is not a /member or /trainer
@@ -38,40 +27,9 @@ export async function RecomputeRetentionScores(): Promise<RecomputeResult> {
   await requireRole("ADMIN");
 
   try {
-    const asOf = new Date();
-    const scoreDate = startOfToday(asOf);
-    const signals = await gatherSignals(asOf);
-
-    const byLevel: Record<RiskLevel, number> = { LOW: 0, MEDIUM: 0, HIGH: 0, CRITICAL: 0 };
-
-    // Sequential rather than Promise.all: this writes one row per member, and
-    // firing every upsert at once exhausts the Supabase pooler's connections
-    // on a gym of any size. The whole job is still well under a second.
-    for (const [memberId, s] of signals) {
-      const result = scoreRetention(s);
-      byLevel[result.riskLevel] += 1;
-
-      await prisma.retentionScore.upsert({
-        where: { memberId_scoreDate: { memberId, scoreDate } },
-        create: {
-          memberId,
-          scoreDate,
-          riskScore: result.riskScore,
-          riskLevel: result.riskLevel,
-          factors: result.factors as unknown as Prisma.InputJsonValue,
-          explanation: result.explanation,
-        },
-        update: {
-          riskScore: result.riskScore,
-          riskLevel: result.riskLevel,
-          factors: result.factors as unknown as Prisma.InputJsonValue,
-          explanation: result.explanation,
-        },
-      });
-    }
-
+    const { scored, byLevel } = await recomputeRetentionScores(new Date());
     revalidatePath("/retention");
-    return { success: true, scored: signals.size, byLevel };
+    return { success: true, scored, byLevel };
   } catch (e) {
     console.error("RecomputeRetentionScores failed:", e);
     return {

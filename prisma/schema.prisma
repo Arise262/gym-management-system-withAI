@@ -622,6 +622,10 @@ enum NotificationType {
   MOTIVATIONAL
   TRAINER_ANNOUNCEMENT
   BOOKING_CONFIRMED
+  /// A member asked for a slot; goes to the trainer.
+  BOOKING_REQUESTED
+  /// Either side dropped a booking; goes to the other side.
+  BOOKING_CANCELLED
   PAYMENT_RECEIVED
   RETENTION_ALERT
 }

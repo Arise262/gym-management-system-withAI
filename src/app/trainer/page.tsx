@@ -7,11 +7,16 @@ import { Separator } from "@/components/ui/separator";
 import LogoutButton from "@/components/custom/LogoutButton";
 import { TrainerSchedule, type BookingRow } from "@/components/booking-lists";
 import { requireRole } from "@/lib/session";
+import { hasMailKey } from "@/lib/mail";
 import { GetTrainerBookings } from "@/action/booking.action";
+import { GetUnreadCount } from "@/action/notification.action";
+import { NotificationBell } from "@/components/notification-bell";
+import { AnnouncementForm } from "@/components/announcement-form";
 
 export default async function Page() {
   const user = await requireRole("TRAINER");
   const bookings = await GetTrainerBookings();
+  const unread = await GetUnreadCount();
 
   const today = format(new Date(), "dd-MM-yyyy");
   const upcoming = bookings.filter((b) => !["COMPLETED", "CANCELLED", "NO_SHOW"].includes(b.status));
@@ -33,10 +38,15 @@ export default async function Page() {
     <div className="mx-auto flex max-w-3xl flex-col gap-4 p-4">
       <Card>
         <CardHeader>
-          <CardTitle>Trainer area</CardTitle>
-          <CardDescription>
-            Signed in as <span className="text-foreground">{user.email}</span>.
-          </CardDescription>
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <CardTitle>Trainer area</CardTitle>
+              <CardDescription>
+                Signed in as <span className="text-foreground">{user.email}</span>.
+              </CardDescription>
+            </div>
+            <NotificationBell href="/trainer/notifications" unread={unread} />
+          </div>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           <div className="flex gap-6">
@@ -76,6 +86,11 @@ export default async function Page() {
       </div>
 
       <TrainerSchedule bookings={rows} />
+
+      <AnnouncementForm
+        audience="members who have booked you or train on a plan you own"
+        mailConfigured={hasMailKey()}
+      />
     </div>
   );
 }

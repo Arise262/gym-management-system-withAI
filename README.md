@@ -73,6 +73,18 @@ A full-featured, modern Gym Management Platform built with **Next.js**, **TypeSc
 ### 🛠 Tools Section
 - Health metric calculators (BMI, BMR, WHR)
 
+### 🔔 Notifications & scheduled jobs
+- In-app notifications panel for members, trainers and admins (bell with unread badge)
+- Email delivery through Brevo's transactional API, with retry for anything that did not go out
+- Daily job at `/api/cron/daily` (guarded by `CRON_SECRET`, triggered by cron-job.org):
+  - membership renewal warnings 7, 3 and 1 day(s) before expiry and on the day
+  - workout reminders for members with an active plan and nothing logged for 3+ days (once a week)
+  - retention re-scoring, with admin alerts for HIGH/CRITICAL members and a gentle nudge to the member that never mentions risk
+  - a Monday progress summary of last week's workouts
+- Event notifications: booking requested / confirmed / cancelled, payment receipt from the PayMongo webhook
+- Trainer and admin announcements to their members, optionally by email
+- Every automated notification carries a dedupe key, so re-running the job never sends a duplicate
+
 ---
 
 ## 🚀 Getting Started
@@ -102,6 +114,17 @@ npx prisma db push
 # Run the development server
 npm run dev
 ````
+
+### Email and the daily job (optional)
+
+1. **Brevo** — create a free account at https://app.brevo.com, verify a sender address under *Senders & IP → Senders*, then generate an API key under *Settings → SMTP & API → API Keys*. Put the key in `BREVO_API_KEY` and the verified address in `MAIL_FROM`. With the key empty, notifications are in-app only.
+2. **CRON_SECRET** — `openssl rand -hex 32` and paste it into `.env` (and into the Vercel project's environment variables).
+3. **cron-job.org** — create a job for `GET https://<your-host>/api/cron/daily`, daily at 07:00 Asia/Manila, with a custom header `Authorization: Bearer <CRON_SECRET>`. Enable failure notifications so a broken run emails you. The same request keeps the Supabase free-tier project from pausing after seven idle days.
+4. Test it from the admin **Notifications** page with *Run now*, or by hand:
+
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" https://<your-host>/api/cron/daily
+```
 
 ---
 

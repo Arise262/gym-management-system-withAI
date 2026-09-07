@@ -3,10 +3,12 @@ import type { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import {
   centavosToPesos,
+  formatCentavos,
   verifyWebhookSignature,
   HANDLED_EVENTS,
   type PayMongoEvent,
 } from "@/lib/paymongo";
+import { notifyMember } from "@/lib/notifications";
 
 /**
  * PayMongo webhook receiver.
@@ -122,6 +124,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ received: true, handled: false });
   }
 
+  // Set inside the transaction when this webhook is the first to mark the
+  // payment PAID; the receipt notification goes out after the commit.
+  let receiptFor: { memberId: string; amount: number } | null = null;
+
   try {
     await prisma.$transaction(async (tx) => {
       // providerPaymentId is unique, so a replayed webhook updates the row it
@@ -156,6 +162,7 @@ export async function POST(req: Request) {
 
       const target = existing?.id ?? pending?.id;
       const alreadyPaid = existing?.status === "PAID";
+      if (e.paid && !alreadyPaid) receiptFor = { memberId, amount };
 
       if (target) {
         await tx.payment.update({
@@ -207,6 +214,27 @@ export async function POST(req: Request) {
     });
 
     console.info(`[paymongo] ${e.eventType} -> payment ${e.paymentId} ${e.paid ? "PAID" : "FAILED"}`);
+
+    // Receipt. Outside the transaction so a slow mail call cannot hold a
+    // pooler connection, and after it so the member is never told about a
+    // payment that then failed to record. Keyed on the provider payment id,
+    // so a retried webhook cannot send a second receipt.
+    if (receiptFor) {
+      const { memberId, amount } = receiptFor as { memberId: string; amount: number };
+      await notifyMember(memberId, {
+        type: "PAYMENT_RECEIVED",
+        title: `Payment received: ${formatCentavos(amount)}`,
+        body:
+          `Thanks — we received your payment of ${formatCentavos(amount)}` +
+          (e.method ? ` via ${e.method.replace(/_/g, " ")}` : "") +
+          `. Your membership record has been updated. Reference: ${e.paymentId}.`,
+        channel: "BOTH",
+        actionUrl: "/member/payments",
+        metadata: { paymentId: e.paymentId, amount, method: e.method },
+        dedupeKey: `payment-received:${e.paymentId}`,
+      });
+    }
+
     return NextResponse.json({ received: true, handled: true });
   } catch (err) {
     console.error("[paymongo] webhook processing failed:", err);
