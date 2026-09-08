@@ -16,6 +16,7 @@
 //   public/icons/apple-touch-icon.png     — square, no alpha (iOS ignores it)
 //   public/fav.png                        — small favicon raster
 import sharp from "sharp";
+import fs from "node:fs";
 import { mkdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -177,3 +178,66 @@ for (const [name, buf] of jobs) {
 }
 console.log("wrote public/logo.png");
 console.log("wrote public/logo-light.png");
+
+/* ────────────────────────────── favicon ────────────────────────────── */
+//
+// The browser tab is 16px. The full logo is illegible there — the arc text
+// turns to noise and you cannot tell it is CBG — so the tab gets a plain "C"
+// monogram in the brand red instead, drawn as an arc so no font is needed.
+//
+// This must be written to src/app/favicon.ico: Next's file convention wins
+// over anything declared in metadata.icons, so a stale file there silently
+// overrides every icon generated above. (That is exactly how the old Synergy
+// "S" survived the rebrand.)
+const BRAND_RED = "#e80000"; // sampled from the logo artwork
+
+function monogramSvg(size) {
+  const k = size / 64;
+  return Buffer.from(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
+       <rect width="${size}" height="${size}" rx="${12 * k}" fill="${BRAND_RED}"/>
+       <g transform="scale(${k})" fill="none" stroke="#ffffff" stroke-width="11" stroke-linecap="round">
+         <path d="M 42.5 17.5 A 17.5 17.5 0 1 0 42.5 46.5"/>
+       </g>
+     </svg>`
+  );
+}
+
+/** Packs PNGs into a multi-size .ico (PNG-embedded, supported since Vista). */
+function buildIco(pngs) {
+  const count = pngs.length;
+  const header = Buffer.alloc(6);
+  header.writeUInt16LE(0, 0); // reserved
+  header.writeUInt16LE(1, 2); // 1 = icon
+  header.writeUInt16LE(count, 4);
+
+  const dir = Buffer.alloc(16 * count);
+  let offset = 6 + 16 * count;
+  pngs.forEach(({ size, data }, i) => {
+    const at = i * 16;
+    dir.writeUInt8(size >= 256 ? 0 : size, at);
+    dir.writeUInt8(size >= 256 ? 0 : size, at + 1);
+    dir.writeUInt8(0, at + 2); // palette size
+    dir.writeUInt8(0, at + 3); // reserved
+    dir.writeUInt16LE(1, at + 4); // colour planes
+    dir.writeUInt16LE(32, at + 6); // bits per pixel
+    dir.writeUInt32LE(data.length, at + 8);
+    dir.writeUInt32LE(offset, at + 12);
+    offset += data.length;
+  });
+
+  return Buffer.concat([header, dir, ...pngs.map((p) => p.data)]);
+}
+
+const icoSizes = [16, 32, 48];
+const icoPngs = [];
+for (const size of icoSizes) {
+  icoPngs.push({ size, data: await sharp(monogramSvg(size)).png().toBuffer() });
+}
+const icoPath = path.join(root, "src", "app", "favicon.ico");
+await sharp(monogramSvg(128))
+  .png({ compressionLevel: 9 })
+  .toFile(path.join(publicOut, "fav.png"));
+fs.writeFileSync(icoPath, buildIco(icoPngs));
+console.log("wrote src/app/favicon.ico  (16/32/48 C monogram)");
+console.log("wrote public/fav.png");
