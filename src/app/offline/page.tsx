@@ -18,7 +18,7 @@ export default function OfflinePage() {
       <div className="max-w-sm space-y-2">
         <h1 className="text-xl font-semibold">You are offline</h1>
         <p className="text-muted-foreground text-sm">
-          Synergy Fitness needs a connection to load your plan, bookings and payments — nothing personal is
+          CBG Fitness Center needs a connection to load your plan, bookings and payments — nothing personal is
           kept on this device. Reconnect and this page will refresh itself.
         </p>
       </div>

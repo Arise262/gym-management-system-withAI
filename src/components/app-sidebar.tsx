@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import * as React from "react";
 import {
   IconBell,
@@ -11,7 +12,6 @@ import {
   IconDoorEnter,
   IconFileAi,
   IconFileDescription,
-  IconInnerShadowTop,
   IconListDetails,
   IconQuestionMark,
   IconReport,
@@ -154,8 +154,9 @@ export function AppSidebar({
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
               <a href="#">
-                <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">Synergy Fitness</span>
+                <Image src="/logo.png" width={24} height={24} alt="" className="dark:hidden" />
+                <Image src="/logo-light.png" width={24} height={24} alt="" className="hidden dark:block" />
+                <span className="text-base font-semibold">CBG Fitness Center</span>
               </a>
             </SidebarMenuButton>
             <ModeToggle />

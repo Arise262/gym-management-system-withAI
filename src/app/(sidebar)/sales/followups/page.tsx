@@ -70,11 +70,11 @@ const page = (props: Props) => {
 
     const handleSaleSelected = (row: any) => {
         setSelectedSale(row);
-        const msgexpired = `Hi👋🏻 ${row.member_name} your ${row.service_name} membership has ended on ${(row.endDate)}, Please renew your membership.%0A%0A-Team Synergy 💪🏻`
-        const msg7days = `Hi👋🏻 ${row.member_name} your ${row.service_name} membership is ending in 7 days (on ${(row.endDate)}), Please renew your membership.%0A%0A-Team Synergy 💪🏻`
-        const msg5days = `Hi👋🏻 ${row.member_name} your ${row.service_name} membership is ending in 5 days (on ${(row.endDate)}), Please renew your membership.%0A%0A-Team Synergy 💪🏻`
-        const msgtoday = `Hi👋🏻 ${row.member_name} your ${row.service_name} membership is ending today (on ${(row.endDate)}), Please renew your membership.%0A%0A-Team Synergy 💪🏻`
-        const msgtomorrow = `Hi👋🏻 ${row.member_name} your ${row.service_name} membership is ending tomorrow (on ${(row.endDate)}), Please renew your membership.%0A%0A-Team Synergy 💪🏻`
+        const msgexpired = `Hi👋🏻 ${row.member_name} your ${row.service_name} membership has ended on ${(row.endDate)}, Please renew your membership.%0A%0A-Team CBG 💪🏻`
+        const msg7days = `Hi👋🏻 ${row.member_name} your ${row.service_name} membership is ending in 7 days (on ${(row.endDate)}), Please renew your membership.%0A%0A-Team CBG 💪🏻`
+        const msg5days = `Hi👋🏻 ${row.member_name} your ${row.service_name} membership is ending in 5 days (on ${(row.endDate)}), Please renew your membership.%0A%0A-Team CBG 💪🏻`
+        const msgtoday = `Hi👋🏻 ${row.member_name} your ${row.service_name} membership is ending today (on ${(row.endDate)}), Please renew your membership.%0A%0A-Team CBG 💪🏻`
+        const msgtomorrow = `Hi👋🏻 ${row.member_name} your ${row.service_name} membership is ending tomorrow (on ${(row.endDate)}), Please renew your membership.%0A%0A-Team CBG 💪🏻`
         if (days === -1) {
             setMessage(msgexpired)
         } else if (days === 7) {

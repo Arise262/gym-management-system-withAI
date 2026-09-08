@@ -14,7 +14,7 @@ const Page = ({ params }: { params: any }) => {
     return (
         <div className='max-w-5xl mx-auto px-4 py-4'>
             <div className='flex items-center justify-between'>
-                <h1 className='font-bold mb-2'>Synergy Sales Invoice</h1>
+                <h1 className='font-bold mb-2'>CBG Sales Invoice</h1>
                 <div className='mb-2 flex gap-2'>
                     <Button
                         onClick={reactToPrintFn}
@@ -24,8 +24,8 @@ const Page = ({ params }: { params: any }) => {
                     </Button>
                     <Button
                         onClick={()=>navigator.share({ 
-                            title: "Synergy Sales Invoice", 
-                            text: `Dear customer below is the link of your invoice of your recent purchase at Synergy Fitness & Wellness Club. Thank you for choosing us.\n\nLink: ${window.location.href}\n\n-Team Synergy 💪🏻`, 
+                            title: "CBG Sales Invoice", 
+                            text: `Dear customer below is the link of your invoice of your recent purchase at CBG Fitness Center. Thank you for choosing us.\n\nLink: ${window.location.href}\n\n-Team CBG 💪🏻`, 
                         })}
                         className="bg-blue-600 hover:bg-blue-700 text-white"
                     >
@@ -62,15 +62,15 @@ const Invoice = ({
         // PLACEHOLDER — replace with the real branch details before deployment.
         // These print on every customer invoice, so they must be correct.
         gym: {
-            name: "Synergy Fitness & Wellness Club",
+            name: "CBG Fitness Center",
             address: "Unit 2, Ground Floor, Sample Building, Barangay Poblacion, Makati City, Metro Manila, Philippines 1210",
             contact: "+63 917 000 0000 , +63 2 8000 0000",
-            email: "synergy.fit.help@gmail.com",
+            email: "info@cbgfitnesscenter.com",
             website: ""
         },
 
         termsAndConditions: [
-            "Membership is non-transferable and non-refundable. PowerFit Gym reserves the right to modify the terms of membership. Members must comply with all gym rules and regulations.",
+            "Membership is non-transferable and non-refundable. CBG Fitness Center reserves the right to modify the terms of membership. Members must comply with all gym rules and regulations.",
         ]
     };
 
@@ -80,7 +80,7 @@ const Invoice = ({
                 {/* Header */}
                 <div className="flex justify-between items-start mb-10">
                     <div>
-                        <img src="/synergy.png" alt="Logo" className="h-16 mb-4" />
+                        <img src="/logo.png" alt="Logo" className="h-16 mb-4" />
                         <h1 className="text-black text-lg">{invoiceData.gym.name}</h1>
                         <p className="text-gray-600">{invoiceData.gym.address}</p>
                         <p className="text-gray-600">Contact: {invoiceData.gym.contact}</p>

@@ -36,8 +36,8 @@ export function hasMailKey(): boolean {
 /**
  * Whether an address is worth attempting.
  *
- * Members with no real email get a generated `<code>@members.synergyfitness.local`
- * login (see lib/accounts.ts), and the seed admin is `admin@synergyfitness.local`.
+ * Members with no real email get a generated `<code>@members.cbgfitness.local`
+ * login (see lib/accounts.ts), and the seed admin is `admin@cbgfitness.local`.
  * Sending to those bounces, and bounces are what get a free Brevo account
  * suspended — so they are filtered here, once, rather than at every call site.
  */
@@ -55,8 +55,8 @@ export function parseSender(raw: string | undefined): { name: string; email: str
   const v = raw?.trim();
   if (!v) return null;
   const m = v.match(/^(.*?)\s*<([^>]+)>$/);
-  if (m) return { name: m[1].replace(/^"|"$/g, "").trim() || "Synergy Fitness", email: m[2].trim() };
-  return { name: "Synergy Fitness", email: v };
+  if (m) return { name: m[1].replace(/^"|"$/g, "").trim() || "CBG Fitness Center", email: m[2].trim() };
+  return { name: "CBG Fitness Center", email: v };
 }
 
 function escapeHtml(s: string): string {
@@ -77,14 +77,14 @@ export function renderEmail(title: string, text: string, actionUrl?: string | nu
     .map((p) => `<p style="margin:0 0 12px 0;line-height:1.5">${escapeHtml(p).replace(/\n/g, "<br>")}</p>`)
     .join("");
   const button = actionUrl
-    ? `<p style="margin:20px 0 0 0"><a href="${escapeHtml(actionUrl)}" style="display:inline-block;background:#111827;color:#fff;text-decoration:none;padding:10px 16px;border-radius:6px;font-weight:600">Open in Synergy Fitness</a></p>`
+    ? `<p style="margin:20px 0 0 0"><a href="${escapeHtml(actionUrl)}" style="display:inline-block;background:#111827;color:#fff;text-decoration:none;padding:10px 16px;border-radius:6px;font-weight:600">Open in CBG Fitness Center</a></p>`
     : "";
   return `<!doctype html><html><body style="margin:0;background:#f4f4f5;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#111827">
 <div style="max-width:560px;margin:24px auto;background:#fff;border-radius:8px;padding:28px;border:1px solid #e5e7eb">
-<p style="margin:0 0 16px 0;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#6b7280">Synergy Fitness</p>
+<p style="margin:0 0 16px 0;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#6b7280">CBG Fitness Center</p>
 <h1 style="margin:0 0 16px 0;font-size:20px">${escapeHtml(title)}</h1>
 ${paragraphs}${button}
-<p style="margin:24px 0 0 0;font-size:12px;color:#6b7280">You are receiving this because you have an account at Synergy Fitness.</p>
+<p style="margin:24px 0 0 0;font-size:12px;color:#6b7280">You are receiving this because you have an account at CBG Fitness Center.</p>
 </div></body></html>`;
 }
 

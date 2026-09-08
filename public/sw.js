@@ -1,4 +1,4 @@
-/* Synergy Fitness service worker.
+/* CBG Fitness Center service worker.
  *
  * Hand-written rather than generated, so every caching decision is visible
  * and defensible. The rules:

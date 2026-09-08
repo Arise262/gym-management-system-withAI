@@ -249,7 +249,7 @@ export async function runRetentionAndNudges(today: Date, asOf: Date): Promise<Da
 
     const r = await notifyMember(m.id, {
       type: "MOTIVATIONAL",
-      title: `A quick hello from Synergy Fitness, ${m.name.split(" ")[0]}`,
+      title: `A quick hello from CBG Fitness Center, ${m.name.split(" ")[0]}`,
       body: MOTIVATIONAL[weekIndex % MOTIVATIONAL.length],
       channel: "BOTH",
       actionUrl: "/member",

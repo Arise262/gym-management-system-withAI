@@ -58,7 +58,7 @@ const PendingPayments = ({ }: Props) => {
                 // 63 is the Philippines. encodeURIComponent is required, not
                 // cosmetic: the peso sign, the emoji, and any "&" in a member
                 // or service name all corrupt the query string raw.
-                const message = `Hi ${row.member_name}, your payment for ${row.service_name} of ₱${row.due} is due, thank you for choosing us. Stay healthy Stay strong.\n\n -Team Synergy 💪🏻`
+                const message = `Hi ${row.member_name}, your payment for ${row.service_name} of ₱${row.due} is due, thank you for choosing us. Stay healthy Stay strong.\n\n -Team CBG 💪🏻`
                 window.open(`https://api.whatsapp.com/send?phone=63${row.member_phone}&text=${encodeURIComponent(message)}`)
             },
             // cellContentGetRow: (row: any) => <Button variant="secondary" className='cursor-pointer'><IconSend size={16} /></Button>,

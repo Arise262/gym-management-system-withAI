@@ -20,7 +20,7 @@ const ROUNDS = 12;
 
 /** Fallback email for legacy members who never had one recorded. */
 function placeholderEmail(memberCode: string) {
-  return `${memberCode.toLowerCase()}@members.synergyfitness.local`;
+  return `${memberCode.toLowerCase()}@members.cbgfitness.local`;
 }
 
 async function seedAdmin() {
@@ -91,7 +91,7 @@ async function backfillMembers() {
   console.log(`✓ Backfilled ${created} member account(s).`);
   console.log(`  Temporary password for all of them: ${tempPassword}`);
   console.log("  Members without a recorded email sign in with:");
-  console.log("    <membercode>@members.synergyfitness.local");
+  console.log("    <membercode>@members.cbgfitness.local");
 
   if (skipped.length) {
     console.log(`\n⚠  ${skipped.length} member(s) skipped — resolve manually:`);

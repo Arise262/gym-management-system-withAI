@@ -101,12 +101,12 @@ async function upsertMember(email: string, name: string) {
 }
 
 async function main() {
-  await upsertTrainer("trainer@synergyfitness.local", "Demo Trainer");
-  await upsertMember("member@synergyfitness.local", "Demo Member");
+  await upsertTrainer("trainer@cbgfitness.local", "Demo Trainer");
+  await upsertMember("member@cbgfitness.local", "Demo Member");
 
   console.log("Demo accounts ready (password for both: " + DEMO_PASSWORD + ")");
-  console.log("  TRAINER  trainer@synergyfitness.local");
-  console.log("  MEMBER   member@synergyfitness.local");
+  console.log("  TRAINER  trainer@cbgfitness.local");
+  console.log("  MEMBER   member@cbgfitness.local");
 }
 
 main()

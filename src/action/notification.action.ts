@@ -139,7 +139,7 @@ export async function SendAnnouncement(
   const { title, body, email } = parsed.data;
 
   let memberIds: string[];
-  let senderName = "Synergy Fitness";
+  let senderName = "CBG Fitness Center";
 
   if (user.role === "ADMIN") {
     const members = await prisma.member.findMany({

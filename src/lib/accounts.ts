@@ -2,14 +2,14 @@ import bcrypt from "bcryptjs";
 import { BCRYPT_ROUNDS } from "@/lib/auth";
 
 /** Domain used for members who have no real email on file. */
-export const PLACEHOLDER_EMAIL_DOMAIN = "members.synergyfitness.local";
+export const PLACEHOLDER_EMAIL_DOMAIN = "members.cbgfitness.local";
 
 /**
  * Login email for a member with no recorded address.
  *
  * Members are a walk-in business — plenty of them never give an email. They
  * still need a unique, predictable login, so their member code becomes one.
- * Staff can tell them "sign in as gym0042@members.synergyfitness.local".
+ * Staff can tell them "sign in as gym0042@members.cbgfitness.local".
  */
 export function placeholderEmail(memberCode: string): string {
   return `${memberCode.toLowerCase()}@${PLACEHOLDER_EMAIL_DOMAIN}`;

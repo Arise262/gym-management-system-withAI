@@ -83,7 +83,7 @@ const SalesPage = (props: Props) => {
 
 https://gym-prisma.vercel.app/invoices/${row.id} 
 
- -Team Synergy 💪🏻`
+ -Team CBG 💪🏻`
         // 63 is the Philippines; encodeURIComponent so the emoji, newlines and
         // any "&" in a member or service name survive the query string.
         window.open(`https://api.whatsapp.com/send?phone=63${row.member.phone}&text=${encodeURIComponent(message)}`)

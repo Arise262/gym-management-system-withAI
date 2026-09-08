@@ -6,8 +6,8 @@ type Props = {}
 const Logo = (props: Props) => {
     return (
         <div>
-            <Image src="/synergy.png" width={100} height={50} alt="fitness" className='dark:hidden' />
-            <Image src="/synergy-light.png" width={100} height={50} alt="fitness" className='hidden dark:block' />
+            <Image src="/logo.png" width={40} height={40} alt="CBG Fitness Center" className='dark:hidden' />
+            <Image src="/logo-light.png" width={40} height={40} alt="CBG Fitness Center" className='hidden dark:block' />
         </div>
     )
 }

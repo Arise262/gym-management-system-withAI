@@ -41,7 +41,7 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<"div"
         <CardHeader>
           <CardTitle className="text-3xl">Create account</CardTitle>
           <CardDescription>
-            Register as a member of Synergy Fitness.
+            Register as a member of CBG Fitness Center.
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -65,8 +65,8 @@ const WorkoutsList = ({ AllExercise }: Props) => {
         <div className='space-y-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6'>
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div className='flex  items-center gap-2'>
-                    <Image src="/synergy.png" width={100} height={50} alt="fitness" className='dark:hidden' />
-                    <Image src="/synergy-light.png" width={100} height={50} alt="fitness" className='hidden dark:block' />
+                    <Image src="/logo.png" width={40} height={40} alt="CBG Fitness Center" className='dark:hidden' />
+                    <Image src="/logo-light.png" width={40} height={40} alt="CBG Fitness Center" className='hidden dark:block' />
                     <h1 className="text-2xl font-bold tracking-tight">Exercise Library</h1>
 
                 </div>

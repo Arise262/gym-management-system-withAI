@@ -1,8 +1,8 @@
 {
-  "id": "synergy-fitness",
-  "name": "Synergy Fitness & Wellness Club",
-  "short_name": "Synergy",
-  "description": "Your workout plan, trainer bookings, payments and progress — Synergy Fitness, Makati City.",
+  "id": "cbg-fitness-center",
+  "name": "CBG Fitness Center",
+  "short_name": "CBG",
+  "description": "Your workout plan, trainer bookings, payments and progress — CBG Fitness Center, Makati City.",
   "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",

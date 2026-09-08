@@ -6,17 +6,17 @@ import { LoadingProvider } from "@/hooks/use-loading";
 import GlobalLoader from "@/components/custom/Loader";
 import { Pwa } from "@/components/pwa";
 
-const APP_NAME = "Synergy Fitness & Wellness Club";
+const APP_NAME = "CBG Fitness Center";
 
 export const metadata: Metadata = {
-  title: { default: APP_NAME, template: `%s · Synergy Fitness` },
-  description: "Your workout plan, trainer bookings, payments and progress — Synergy Fitness, Makati City.",
-  applicationName: "Synergy Fitness",
+  title: { default: APP_NAME, template: `%s · CBG Fitness Center` },
+  description: "Your workout plan, trainer bookings, payments and progress — CBG Fitness Center, Makati City.",
+  applicationName: "CBG Fitness Center",
   manifest: "/manifest.json",
   // iOS has no manifest support for these; it reads the meta tags instead.
   appleWebApp: {
     capable: true,
-    title: "Synergy",
+    title: "CBG",
     statusBarStyle: "default",
   },
   formatDetection: { telephone: false },
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: APP_NAME,
     description: "Best gym in Makati City",
-    images: [{ url: "/synergy.png", width: 1200, height: 627 }],
+    images: [{ url: "/logo.png", width: 1108, height: 1073 }],
   },
 };
 

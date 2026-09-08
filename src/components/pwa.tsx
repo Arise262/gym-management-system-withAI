@@ -80,7 +80,7 @@ export function Pwa() {
         // A worker waiting behind an active one means a new version shipped.
         const offer = (worker: ServiceWorker) =>
           toast("A new version is ready", {
-            description: "Reload to get the latest Synergy Fitness.",
+            description: "Reload to get the latest CBG Fitness Center.",
             duration: Infinity,
             action: { label: "Reload", onClick: () => worker.postMessage({ type: "SKIP_WAITING" }) },
           });
@@ -150,12 +150,12 @@ export function Pwa() {
   return (
     <div
       role="dialog"
-      aria-label="Install Synergy Fitness"
+      aria-label="Install CBG Fitness Center"
       className="bg-card text-card-foreground fixed inset-x-3 bottom-3 z-50 mx-auto flex max-w-md items-center gap-3 rounded-xl border p-3 shadow-lg"
     >
       <img src="/icons/icon-192.png" alt="" width={40} height={40} className="size-10 shrink-0 rounded-lg" />
       <div className="min-w-0 flex-1 text-sm">
-        <p className="font-semibold">Install Synergy Fitness</p>
+        <p className="font-semibold">Install CBG Fitness Center</p>
         {installEvent ? (
           <p className="text-muted-foreground">Add it to your home screen for one-tap access to your plan and bookings.</p>
         ) : (
