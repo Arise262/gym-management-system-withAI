@@ -262,7 +262,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, toggleTodo, deleteTodo }) => 
         </div>
         
         <div className="text-xs text-muted-foreground mt-2">
-          Added: {todo.createdAt.toLocaleDateString()} at {todo.createdAt.toLocaleTimeString()}
+          Added: {todo.createdAt.toLocaleDateString("en-PH", { day: "numeric", month: "short", year: "numeric" })} at {todo.createdAt.toLocaleTimeString("en-PH", { hour: "numeric", minute: "2-digit" })}
         </div>
       </CardContent>
     </Card>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { format } from "date-fns";
 import { IconArrowRight } from "@tabler/icons-react";
 import { GetAdminDashboard } from "@/action/dashboard.action";
 import { StatGrid, StatTile, pesos } from "@/components/stat-tile";
@@ -46,7 +47,7 @@ export default async function DashboardPage() {
         <StatTile
           label="Members at risk"
           value={atRisk}
-          hint={d.retention.lastRun ? `${d.retention.byLevel.CRITICAL} critical · scored ${new Date(d.retention.lastRun).toLocaleDateString()}` : "Retention has not been scored yet"}
+          hint={d.retention.lastRun ? `${d.retention.byLevel.CRITICAL} critical · scored ${format(new Date(d.retention.lastRun), "d MMM yyyy")}` : "Retention has not been scored yet"}
           tone={d.retention.byLevel.CRITICAL > 0 ? "critical" : atRisk > 0 ? "warning" : "good"}
         />
         <StatTile

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { format } from "date-fns";
 import { IconArrowLeft, IconCheck, IconX } from "@tabler/icons-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -98,7 +99,11 @@ export default async function PaymentsPage({
                   <p className="text-muted-foreground text-sm">
                     {p.sale?.service.name ?? "Payment"}
                     {p.method ? ` · ${p.method}` : ""} ·{" "}
-                    {new Date(p.paidAt ?? p.createdAt).toLocaleDateString()}
+                    {/* Not toLocaleDateString() — with no locale argument that
+                        renders per the viewer's machine, so the same receipt
+                        reads "9/9/2026" here and "09/09/2026" elsewhere. Pin it
+                        to the app's date format (see lib/format.ts). */}
+                    {format(new Date(p.paidAt ?? p.createdAt), "d MMM yyyy")}
                   </p>
                 </div>
                 <Badge className={STATUS_STYLE[p.status] ?? ""}>{p.status}</Badge>

@@ -1,3 +1,4 @@
+import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -65,7 +66,7 @@ export default async function AdminPaymentsPage() {
                       <Badge className={STATUS_STYLE[p.status] ?? ""}>{p.status}</Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
-                      {new Date(p.paidAt ?? p.createdAt).toLocaleDateString()}
+                      {format(new Date(p.paidAt ?? p.createdAt), "d MMM yyyy")}
                     </TableCell>
                   </TableRow>
                 ))}
