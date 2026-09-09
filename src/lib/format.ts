@@ -15,6 +15,28 @@ export function formatAppDate(value?: string | null, pattern = "d MMM yyyy"): st
   return format(parsed, pattern);
 }
 
+/**
+ * Coerces a date string into the `dd-MM-yyyy` the schema stores.
+ *
+ * `<input type="date">` submits `yyyy-MM-dd`, and the registration form used
+ * one — so every self-registered member had a date of birth in ISO while the
+ * rest of the app stored and parsed `dd-MM-yyyy`. Nothing complained until
+ * something tried to parse it, and then it threw "Invalid time value".
+ *
+ * Accepts either shape and returns undefined if it is neither, so a caller can
+ * reject the input rather than store an unparseable value.
+ */
+export function toAppDate(value?: string | null): string | undefined {
+  const raw = String(value ?? "").trim();
+  if (!raw) return undefined;
+
+  for (const pattern of ["dd-MM-yyyy", "yyyy-MM-dd"]) {
+    const parsed = parse(raw, pattern, new Date());
+    if (isValid(parsed)) return format(parsed, "dd-MM-yyyy");
+  }
+  return undefined;
+}
+
 /** Whole pesos, thousands-separated, no decimals — the app-wide money format. */
 export function pesos(n: number): string {
   return `₱${Math.round(n).toLocaleString("en-PH")}`;

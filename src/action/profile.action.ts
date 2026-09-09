@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
 import { requireMemberId } from "@/lib/session";
 import { normalizePhMobile } from "@/lib/phone";
+import { toAppDate } from "@/lib/format";
 
 /**
  * A member correcting their own details.
@@ -26,10 +27,9 @@ const detailsSchema = z.object({
   phone: z.string().trim().min(1, "Enter your mobile number."),
   // The schema's Gender enum is lower-case.
   gender: z.enum(["male", "female", "other"], { message: "Choose an option." }),
-  DOB: z
-    .string()
-    .trim()
-    .regex(/^\d{2}-\d{2}-\d{4}$/, "Use the date picker so the date is stored correctly."),
+  // Shape is checked by toAppDate() below, which accepts both dd-MM-yyyy and
+  // the yyyy-MM-dd a native date input submits.
+  DOB: z.string().trim().min(1, "Pick your date of birth."),
   address: z.string().trim().max(200, "That address is too long.").optional(),
 });
 
@@ -58,7 +58,10 @@ export async function GetMyDetails(): Promise<MyDetails> {
     // BigInt cannot cross into a client component - stringify at the boundary.
     phone: m.phone.toString(),
     gender: m.gender,
-    DOB: m.DOB,
+    // Members who registered before the DOB format was fixed have an ISO date
+    // stored. Coerce on read so the date picker is never handed a value it
+    // cannot parse — it throws "Invalid time value" and takes the page down.
+    DOB: toAppDate(m.DOB) ?? "",
     address: m.address ?? "",
     email: m.user?.email ?? "",
     memberCode: m.memberCode,
@@ -79,6 +82,11 @@ export async function SaveMyDetails(
 
   const d = parsed.data;
 
+  const dob = toAppDate(d.DOB);
+  if (!dob) {
+    return { success: false, field: "DOB", error: "Pick a valid date of birth." };
+  }
+
   // Reject a malformed number instead of letting BigInt quietly truncate it.
   const phone = normalizePhMobile(d.phone);
   if (!phone) {
@@ -95,7 +103,7 @@ export async function SaveMyDetails(
       name: d.name,
       phone: BigInt(phone),
       gender: d.gender,
-      DOB: d.DOB,
+      DOB: dob,
       address: d.address?.trim() || null,
     },
   });

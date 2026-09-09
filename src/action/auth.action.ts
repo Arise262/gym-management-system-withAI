@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { AuthError } from "next-auth";
 import prisma from "@/lib/prisma";
 import { normalizePhMobile } from "@/lib/phone";
+import { toAppDate } from "@/lib/format";
 import { signIn, signOut, BCRYPT_ROUNDS } from "@/lib/auth";
 import { requireUser } from "@/lib/session";
 import { generateUniqueMemberCode } from "@/action/member.action";
@@ -85,6 +86,14 @@ export async function RegisterMember(
     };
   }
 
+  // <input type="date"> submits yyyy-MM-dd, but the schema stores dd-MM-yyyy
+  // everywhere else. Storing the raw value left every self-registered member
+  // with a date of birth nothing in the app could parse.
+  const dob = toAppDate(DOB);
+  if (!dob) {
+    return { success: false, error: "Enter a valid date of birth." };
+  }
+
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
     return { success: false, error: "An account with that email already exists." };
@@ -106,7 +115,7 @@ export async function RegisterMember(
           memberCode,
           phone: BigInt(normalizedPhone),
           gender,
-          DOB,
+          DOB: dob,
           DOJ: format(new Date(), "dd-MM-yyyy"),
         },
       });
