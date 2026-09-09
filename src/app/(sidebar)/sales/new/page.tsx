@@ -75,8 +75,11 @@ const NewSalePage = () => {
         const e: Errors = {}
         if (!draft.member_id) e.member_id = 'Choose a member.'
         if (!draft.service_id) e.service_id = 'Choose a service.'
+        // Only meaningful once a service HAS been chosen. Run unconditionally,
+        // it overwrote "Choose a service." on an empty form and blamed the
+        // price of a service the user had not picked yet.
+        else if (draft.amount <= 0) e.service_id = 'That service has no price set.'
         if (!draft.startDate) e.startDate = 'Pick a start date.'
-        if (draft.amount <= 0) e.service_id = 'That service has no price set.'
 
         if (!Number.isFinite(discount) || discount < 0) e.discount = 'Discount cannot be negative.'
         else if (discount > draft.amount)
