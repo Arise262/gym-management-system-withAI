@@ -45,12 +45,25 @@ export async function SaveFitnessProfile(
 ): Promise<PlanActionResult> {
   const memberId = await requireMemberId();
 
+  // A field the member left alone still arrives, as "". Zod's .optional() means
+  // ABSENT, not empty, so every optional control on this form — body type,
+  // activity level, height, target weight — rejected the blank the label
+  // invited, and the profile could not be saved at all. Drop the empties so
+  // "optional" behaves the way the label promises.
+  const raw = Object.fromEntries(formData);
+  for (const key of Object.keys(raw)) {
+    if (raw[key] === "") delete raw[key];
+  }
+
   const parsed = profileSchema.safeParse({
-    ...Object.fromEntries(formData),
+    ...raw,
     availableEquipment: formData.getAll("availableEquipment").map(String),
   });
   if (!parsed.success) {
-    return { success: false, error: parsed.error.issues[0].message };
+    const issue = parsed.error.issues[0];
+    // Name the field — "Invalid enum value" alone tells a member nothing.
+    const where = issue.path.length ? `${String(issue.path[0])}: ` : "";
+    return { success: false, error: `${where}${issue.message}` };
   }
 
   const d = parsed.data;
