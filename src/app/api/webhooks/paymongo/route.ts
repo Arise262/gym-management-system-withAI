@@ -137,16 +137,37 @@ export async function POST(req: Request) {
         select: { id: true, status: true, memberId: true, saleId: true, amount: true },
       });
 
-      // Fall back to the pending row this checkout created, so the payment
-      // keeps its link to the sale even if metadata is missing.
-      const pending = existing
-        ? null
-        : e.checkoutId
-          ? await tx.payment.findFirst({
-              where: { providerCheckoutId: e.checkoutId },
+      // Fall back to the pending row StartCheckout wrote, so the payment
+      // settles that row instead of recording a second one beside it.
+      //
+      // Two ways to find it, because the two events PayMongo sends for one
+      // payment carry different identifiers. A checkout_session.* event names
+      // the session, so the checkout id matches. A payment.* event has NO
+      // checkout_session_id attribute at all — only the metadata we set on the
+      // session — and it always arrives FIRST. Matching on the checkout id
+      // alone therefore missed every time: payment.paid created a duplicate
+      // row, checkout_session.payment.paid then found that duplicate by
+      // providerPaymentId, and the original PENDING row was orphaned for good.
+      const pendingWhere: Prisma.PaymentWhereInput[] = [];
+      if (e.checkoutId) pendingWhere.push({ providerCheckoutId: e.checkoutId });
+      if (e.saleId && e.memberId) {
+        pendingWhere.push({
+          saleId: e.saleId,
+          memberId: e.memberId,
+          ...(e.amountCentavos !== null ? { amount: e.amountCentavos } : {}),
+        });
+      }
+
+      // providerPaymentId must still be null: a row already tied to a payment
+      // belongs to that payment, never to this one.
+      const pending =
+        existing || pendingWhere.length === 0
+          ? null
+          : await tx.payment.findFirst({
+              where: { status: "PENDING", providerPaymentId: null, OR: pendingWhere },
+              orderBy: { createdAt: "desc" },
               select: { id: true, memberId: true, saleId: true, amount: true },
-            })
-          : null;
+            });
 
       const memberId = e.memberId ?? existing?.memberId ?? pending?.memberId;
       if (!memberId) {
