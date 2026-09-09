@@ -24,6 +24,13 @@ const daysAhead = (n: number) => format(addDays(today, n), FMT);
 /** The member whose screens the demo walks through. */
 const MEMBER_NAME = "Miguel Torres";
 
+/**
+ * How far back the active plan is anchored. Must be at least one day older than
+ * the oldest logged session below (20 days), or the progress page reports more
+ * workouts completed than it ever assigned.
+ */
+const PLAN_STARTED_DAYS_AGO = 21;
+
 /** What CBG charges: ₱200 a year to be a member, ₱600 a month on top. */
 const ANNUAL_FEE = 200;
 const MONTHLY_BILL = 600;
@@ -129,6 +136,16 @@ async function main() {
 
   let logged = 0;
   if (plan) {
+    // Adherence is computed as daysPerWeek x weeks elapsed since plan.createdAt
+    // (dashboard.action.ts, "assignedSoFar"). The sessions below are backdated
+    // up to 20 days, so a plan created today reports "8 of 4 completed" — more
+    // completed than were ever assigned. Anchor the plan behind its own logged
+    // history so the two agree.
+    await prisma.workoutPlan.update({
+      where: { id: plan.id },
+      data: { createdAt: subDays(today, PLAN_STARTED_DAYS_AGO) },
+    });
+
     // Walk backwards from most recent so week 1 sits furthest in the past.
     const spacing = [3, 5, 8, 10, 12, 15, 17];
     for (const [i, day] of plan.days.entries()) {

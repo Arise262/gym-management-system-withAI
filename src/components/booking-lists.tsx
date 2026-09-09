@@ -9,6 +9,7 @@ import { CancelBooking, SetBookingStatus } from "@/action/booking.action";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatAppDate } from "@/lib/format";
 
 const STATUS_STYLE: Record<BookingStatus, string> = {
   PENDING: "bg-amber-400 text-black hover:bg-amber-400",
@@ -46,7 +47,7 @@ function Row({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <CardTitle className="text-base tabular-nums">
-              {b.date} · {b.startTime}–{b.endTime}
+              {formatAppDate(b.date) ?? b.date} · {b.startTime}–{b.endTime}
             </CardTitle>
             <CardDescription>
               {b.counterparty}

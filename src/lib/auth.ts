@@ -37,7 +37,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         const user = await prisma.user.findUnique({
           where: { email: parsed.data.email.toLowerCase().trim() },
-          include: { member: { select: { id: true, name: true } } },
+          // User has no name column of its own — the display name lives on the
+          // profile row. A TRAINER has no member relation, so including only
+          // `member` left every trainer with a null session name.
+          include: {
+            member: { select: { id: true, name: true } },
+            trainer: { select: { name: true } },
+          },
         });
 
         const passwordOk = await bcrypt.compare(
@@ -55,7 +61,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         return {
           id: user.id,
           email: user.email,
-          name: user.member?.name ?? null,
+          name: user.member?.name ?? user.trainer?.name ?? null,
           role: user.role,
           memberId: user.member?.id ?? null,
         };
