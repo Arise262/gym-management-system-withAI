@@ -56,6 +56,14 @@ const MemberPage = (props: Props) => {
     fetchData();
   }, []);
   useEffect(() => {
+    // Skip the initial render. `value` starts as "", which matches none of the
+    // branches below, so this effect used to race the mount effect above: it
+    // fired at the same time and fell straight through to hideLoading() while
+    // that first fetch was still in flight. The table then flashed its empty
+    // state before the members arrived. The tab handler owns this effect; the
+    // first load belongs to the effect above.
+    if (!value) return;
+
     async function fetchData() {
       if (value === "0") {
         const data = await getAllMembersWithActiveSale();
