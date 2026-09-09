@@ -80,11 +80,14 @@ export async function AddSales(data: SalesInput): Promise<SalesResponse> {
   await requireRole("ADMIN");
   try {
     // Validate inputs
+    // `!data.paid` was true for 0, so a membership sold on credit — the exact
+    // case the form invites with "Enter 0 if they are paying later" — was
+    // rejected as "Missing required fields". Check for absent, not falsy.
     if (
       !data.member_id ||
       !data.service_id ||
-      !data.amount ||
-      !data.paid ||
+      data.amount == null ||
+      data.paid == null ||
       !data.startDate
     ) {
       throw new Error("Missing required fields");
