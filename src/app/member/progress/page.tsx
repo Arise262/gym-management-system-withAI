@@ -43,7 +43,10 @@ export default async function MemberProgressPage() {
         <StatTile
           label="Engagement score"
           value={p.latest ? p.latest.engagementScore : "—"}
-          hint={p.latest ? `Week of ${p.latest.weekLabel} · ${p.latest.consistencyRate}% plan consistency` : "Scored weekly once you start logging"}
+          // Scoped wording on purpose: this is ONE completed week, while the Plan
+          // adherence card below counts the whole plan. Without saying so, the two
+          // percentages sit on the same screen looking like they contradict.
+          hint={p.latest ? `Week of ${p.latest.weekLabel} · ${p.latest.consistencyRate}% consistency that week` : "Scored weekly once you start logging"}
           tone={p.latest && p.latest.engagementScore >= 70 ? "good" : undefined}
         />
       </StatGrid>
@@ -61,7 +64,7 @@ export default async function MemberProgressPage() {
             <p className="text-sm">
               <span className="font-semibold">{p.plan.adherencePct}%</span>{" "}
               <span className="text-muted-foreground">
-                — {p.plan.completed} of {p.plan.assignedSoFar} assigned workouts completed so far
+                — {p.plan.completed} of {p.plan.assignedSoFar} assigned workouts completed since the plan started
               </span>
             </p>
           </CardContent>

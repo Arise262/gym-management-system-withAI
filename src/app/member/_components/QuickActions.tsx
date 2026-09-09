@@ -52,7 +52,12 @@ export default function QuickActions() {
                 "group flex h-full min-h-[5.5rem] flex-col justify-between rounded-xl border p-3 transition-colors",
                 "focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
                 primary
-                  ? "bg-brand text-brand-foreground border-transparent hover:brightness-110"
+                  ? // Deliberately --primary, NOT --brand. In dark mode --brand is
+                    // lifted so red TEXT clears contrast on a card, but as a large
+                    // FILL that lifted red reads salmon under near-black label text.
+                    // --primary is pinned to the saturated red with white on top,
+                    // which is exactly what a big filled surface wants.
+                    "bg-primary text-primary-foreground border-transparent hover:brightness-110"
                   : "bg-card hover:border-brand/40 hover:bg-accent"
               )}
             >
@@ -67,7 +72,7 @@ export default function QuickActions() {
                 <span
                   className={cn(
                     "block text-xs",
-                    primary ? "text-brand-foreground/80" : "text-muted-foreground"
+                    primary ? "text-primary-foreground/80" : "text-muted-foreground"
                   )}
                 >
                   {hint}
