@@ -1,136 +1,129 @@
-# 🏋️‍♂️ Gym Management Software – atharvaarbat-gym-5
+# CBG Fitness Center — AI-Powered Gym Management System
 
-A full-featured, modern Gym Management Platform built with **Next.js**, **TypeScript**, **Prisma**, and **Tailwind CSS**. This project is a comprehensive tool for gym owners and trainers to manage members, attendance, sales, enquiries, diet plans, workout tracking, and much more – all from a responsive and intuitive dashboard.
+A production web application for a real gym in Makati, Philippines. It handles membership, attendance, payments, trainer booking and messaging, and adds three AI features: a workout planner, a churn-risk model, and a member assistant grounded in that member's own records.
 
----
-
-![Plot](screenshots/1%20(1).png)
-![.](screenshots/1%20(2).png)
-![.](screenshots/1%20(3).png)
-![.](screenshots/1%20(4).png)
-![.](screenshots/1%20(5).png)
-![.](screenshots/1%20(6).png)
-
-## 🔧 Tech Stack
-
-| Category       | Technology                          |
-|----------------|--------------------------------------|
-| Frontend       | React, Next.js (App Router), Tailwind CSS |
-| Styling        | TailwindCSS, ShadCN UI               |
-| Backend        | Next.js API Actions (Server Actions) |
-| Database       | PostgreSQL (via Prisma ORM)          |
-| Auth & Session | JWT-based authentication             |
-| UI Components  | ShadCN UI, Lucide Icons              |
-| State/Utils    | React hooks, utility modules         |
-| Deployment     | Vercel (ideal), Docker-ready         |
+Built as a capstone project. **Live:** https://gym-management-mauve.vercel.app
 
 ---
 
-## 📦 Features
+## What it does
 
-### 👥 Member Management
-- Register new members
-- View, edit, or delete member details
-- Track attendance history
-- Birthday tracking
-- View individual workout records
+**Admin** — dashboard (revenue, attendance, engagement, members at risk), members, sales and invoices, payments, retention scoring, enquiries, services, attendance, notifications.
 
-### 📅 Attendance
-- Mark and view daily attendance
-- Attendance summary per member
-- Attendance history tab for reports
+**Member** — AI workout plan with logging, progress and streaks, trainer browsing and booking, chat with a trainer, the AI assistant, balance and receipts. Installable as a PWA.
 
-### 🏋️‍♀️ Exercise & Workout Management
-- Create, edit and list exercises
-- Assign workout plans per user
-- Exercise data input system with categorized JSON structure
+**Trainer** — schedule with confirm / complete / no-show, client list with engagement, announcements to their own members.
 
-### 🥗 Diet Management
-- Manage food items
-- Create personalized diet plans
-- Diet planner with dynamic input system
-
-### 💰 Sales & Invoicing
-- Manage gym service sales
-- Generate and view invoices per sale
-- Handle follow-ups and pending payments
-
-### 📞 Enquiry Management
-- Record and follow up on potential client enquiries
-- Manage enquiry status and track conversions
-
-### 💼 Services
-- Add new services offered by the gym (e.g., personal training, Zumba, etc.)
-
-### 📊 Dashboard & Analytics
-- Administrative dashboard: KPI row (members, billed vs collected, outstanding balance, check-ins, members at risk, engagement score, active plans, trainer sessions), 30-day attendance, 6-month revenue, workouts per week, retention risk bands, memberships ending this week, pending payments
-- Member progress page: workouts per week, week streak, plan adherence, training volume, body-weight trend, weekly engagement score
-- Trainer roster: each client's plan, days since their last logged workout, sessions this month, engagement score
-- Engagement monitoring: one `EngagementMetric` row per member per week (attendance, plan consistency, 0–100 score), recomputed by the daily job
-- Every chart has a plain-table twin, a validated colour-blind-safe palette, and light/dark variants
-- Custom tools: BMI, BMR, WHR calculators
-
-### ✅ To-Do & Task Management
-- Inbuilt to-do tracker for staff or admins
-
-### 🛠 Tools Section
-- Health metric calculators (BMI, BMR, WHR)
-
-### 📱 Installable app (PWA)
-- Installs to the home screen on Android, iOS and desktop: web app manifest with maskable icons and shortcuts, an in-app install card (or the Share → Add to Home Screen hint on iOS)
-- Hand-written service worker (`public/sw.js`): build assets cache-first, images stale-while-revalidate with a cap, navigations network-first with an `/offline` fallback
-- Pages behind a login are never cached on the device, so a shared phone cannot replay someone's plan or payments
-- One-tap "new version ready" reload when a deploy ships; offline/online toasts
-- Regenerate icons with `node scripts/generate-icons.mjs`
-
-### 🔔 Notifications & scheduled jobs
-- In-app notifications panel for members, trainers and admins (bell with unread badge)
-- Email delivery through Brevo's transactional API, with retry for anything that did not go out
-- Daily job at `/api/cron/daily` (guarded by `CRON_SECRET`, triggered by cron-job.org):
-  - membership renewal warnings 7, 3 and 1 day(s) before expiry and on the day
-  - workout reminders for members with an active plan and nothing logged for 3+ days (once a week)
-  - retention re-scoring, with admin alerts for HIGH/CRITICAL members and a gentle nudge to the member that never mentions risk
-  - a Monday progress summary of last week's workouts
-- Event notifications: booking requested / confirmed / cancelled, payment receipt from the PayMongo webhook
-- Trainer and admin announcements to their members, optionally by email
-- Every automated notification carries a dedupe key, so re-running the job never sends a duplicate
+Roles are enforced by default-deny middleware, and every server action re-checks the session rather than trusting an id from the client.
 
 ---
 
-## 🚀 Getting Started
+## The AI features
+
+### 1. Workout planner — `claude-sonnet-5`
+
+The model generates **one week**. `applyProgression()` expands it to the full programme in TypeScript: baseline, then +1 rep, then +1 set and +2 reps, then a deload, repeating every fourth week. Progression is arithmetic, so it belongs in code — that also makes it deterministic and cuts generation cost.
+
+Plans are assembled from a seeded library of real exercises and the response is schema-validated before anything is stored, so the model cannot invent an exercise or write a malformed plan. Inputs are the member's fitness goal, body type, experience level, days per week, and any stated injuries.
+
+### 2. Retention prediction — no LLM
+
+A deterministic weighted score over six signals:
+
+| Signal | Weight |
+|---|---|
+| Recency of last visit | 0.30 |
+| Frequency trend | 0.20 |
+| Frequency level | 0.15 |
+| Membership expiry | 0.15 |
+| Plan adherence | 0.10 |
+| Payment arrears | 0.10 |
+
+Each normalises to 0–1; the weighted sum × 100 gives a risk score, with bands at 25 / 50 / 75. Under fourteen days of membership the score is damped toward zero — a new member has no history, not a problem. Chosen over an LLM because it must be free to run nightly, identical on every run, and explainable line by line. **The weights are reasoned, not fitted** — the gym has no historical churn labels to train against.
+
+### 3. Member assistant — `claude-haiku-4-5`
+
+Answers from one member's own plan, logged workouts, bookings and balance. Their churn score is passed in as a tone hint the model is instructed never to surface, and medical questions are redirected to a trainer or doctor rather than answered.
+
+---
+
+## Stack
+
+| Layer | Choice |
+|---|---|
+| Framework | Next.js 15 (App Router), TypeScript, server actions |
+| Database | PostgreSQL via Prisma — 15 models / 25 tables |
+| Auth | Auth.js v5, credentials provider, bcrypt cost 12 |
+| UI | Tailwind CSS v4, shadcn/ui, Recharts |
+| AI | Claude API (`@anthropic-ai/sdk`), structured output validated with Zod |
+| Payments | PayMongo hosted checkout — GCash, card, GrabPay, Maya |
+| Email | Brevo HTTP API |
+| Scheduling | External cron caller hitting an authenticated route |
+| Mobile | Progressive Web App — hand-written service worker, no PWA dependency |
+
+Functions and database are deployed to the **same region**. The daily job takes ~48 s run from a laptop in Manila against a Sydney database and ~650 ms from a function co-located with it.
+
+---
+
+## Getting started
 
 ### Prerequisites
+
 - Node.js 18+
-- PostgreSQL (locally or remote)
-- Optional: Docker (for containerization)
+- A PostgreSQL database
+- An Anthropic API key (for the planner and assistant)
 
 ### Setup
 
 ```bash
-# Clone the repository
-git clone https://github.com/atharvaarbat/gym-5.git
-cd atharvaarbat-gym-5
+git clone https://github.com/Arise262/gym-management-system-withAI.git
+cd gym-management-system-withAI
 
-# Install dependencies
 npm install
 
-# Setup environment variables
 cp .env.example .env
-# Add your DB credentials and JWT secret etc.
+# fill in the values described below
 
-# Push database schema
 npx prisma db push
-
-# Run the development server
+npm run db:seed
 npm run dev
-````
+```
 
-### Email and the daily job (optional)
+### Environment variables
 
-1. **Brevo** — create a free account at https://app.brevo.com, verify a sender address under *Senders & IP → Senders*, then generate an API key under *Settings → SMTP & API → API Keys*. Put the key in `BREVO_API_KEY` and the verified address in `MAIL_FROM`. With the key empty, notifications are in-app only.
-2. **CRON_SECRET** — `openssl rand -hex 32` and paste it into `.env` (and into the Vercel project's environment variables).
-3. **cron-job.org** — create a job for `GET https://<your-host>/api/cron/daily`, daily at 07:00 Asia/Manila, with a custom header `Authorization: Bearer <CRON_SECRET>`. Enable failure notifications so a broken run emails you. The same request keeps the Supabase free-tier project from pausing after seven idle days.
-4. Test it from the admin **Notifications** page with *Run now*, or by hand:
+| Variable | Required | Notes |
+|---|---|---|
+| `DATABASE_URL` | yes | Pooled connection string |
+| `DIRECT_URL` | yes | Direct connection for migrations. On Supabase use the **Session pooler** host — the `db.<ref>.supabase.co` host is IPv6-only on new projects and `prisma db push` fails on IPv4 |
+| `AUTH_SECRET` | yes | `openssl rand -base64 32` |
+| `ANTHROPIC_API_KEY` | yes | Must be **scoped to a workspace**; an org-level key returns 400 on every request |
+| `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` | seeding | The first admin account |
+| `PAYMONGO_SECRET_KEY` / `PAYMONGO_PUBLIC_KEY` / `PAYMONGO_WEBHOOK_SECRET` | optional | Absent keys degrade checkout to "pay at the front desk" rather than erroring |
+| `BREVO_API_KEY` / `MAIL_FROM` | optional | Absent key makes notifications in-app only |
+| `CRON_SECRET` | optional | `openssl rand -hex 32`; required by the daily job route |
+| `APP_URL` | optional | Falls back to the platform's deployment URL |
+
+`AUTH_URL` is deliberately unset — `trustHost: true` derives the origin from the request, so any port or host works.
+
+### Seed data
+
+```bash
+npm run db:seed            # admin account and base data
+npm run db:seed:exercises  # the exercise library the planner selects from
+npm run db:seed:demo       # demo member and trainer accounts
+npm run db:seed:retention  # members spanning every churn risk band
+npm run db:seed:activity   # check-ins, logged workouts and bookings for one member
+```
+
+`db:seed:activity` clears that member's own history before rebuilding it, so it is re-runnable — but it also rewrites their sales, which will detach any real payment already recorded against them.
+
+### Payments and the daily job
+
+1. **PayMongo** — test keys are available without KYC; only live keys require business registration. Point a webhook at `https://<your-host>/api/webhooks/paymongo` for `checkout_session.payment.paid`, `payment.paid` and `payment.failed`, and put its signing secret in `PAYMONGO_WEBHOOK_SECRET`. The webhook is the **only** place a payment is marked paid.
+2. **Brevo** — verify a sender address, then generate an API key. An unverified sender makes a working key look broken.
+3. **Cron** — schedule `GET https://<your-host>/api/cron/daily` daily with header `Authorization: Bearer <CRON_SECRET>`. Every automated notification carries a dedupe key, so re-running the job creates no duplicates. On a free-tier database the same request also prevents the project pausing when idle.
+
+Test it from the admin **Notifications** page with *Run now*, or:
 
 ```bash
 curl -H "Authorization: Bearer $CRON_SECRET" https://<your-host>/api/cron/daily
@@ -138,18 +131,22 @@ curl -H "Authorization: Bearer $CRON_SECRET" https://<your-host>/api/cron/daily
 
 ---
 
-## 🧠 Why this project?
+## Design decisions worth knowing
 
-This project was built to demonstrate:
+- **The webhook is the only source of truth for payments.** A redirect back from a payment page proves the browser returned, not that money moved. The provider sends more than one event per payment and they do not arrive in the obvious order, so matching is idempotent on the provider's payment id.
+- **Money units.** The payment provider works in centavos, this schema in whole pesos. Conversion happens in one file and nowhere else.
+- **Chat polls; it is not a realtime subscription.** Realtime would need row-level security policies this schema does not have, and shipping it without them would expose every conversation.
+- **Signed-in pages are never cached by the service worker.** Gym phones get shared.
+- **Dates are stored as `dd-MM-yyyy` strings** (inherited from the original schema), so they cannot be ordered in SQL and are parsed in application code. `formatAppDate()` renders them; real `DateTime` columns are formatted with date-fns. Nothing uses the viewer's locale.
 
-* Full-stack application architecture using modern tools
-* Real-world state and data management
-* Clean component-based structure
-* Reusable hooks and custom logic
-* Scalable code patterns ideal for production
-* Business logic via server actions (Next.js App Router)
+## Current limitations
+
+- Payments run in the provider's **test mode**. Live keys require business registration documents.
+- Web Push is not implemented; notifications are in-app and email.
+- The retention weights are reasoned rather than trained on outcome data.
 
 ---
 
+## Attribution
 
-**Crafted with 💪 by Atharva Arbat**
+This project began as a fork of [atharvaarbat/gym-management](https://github.com/atharvaarbat/gym-management), which provided the initial CRUD scaffolding for members, sales and enquiries. Everything since — authentication and role-based access, the schema as it now stands, all three AI features, payments, notifications and the scheduled job, the dashboards, the PWA, and the current interface — was built on top of it.
