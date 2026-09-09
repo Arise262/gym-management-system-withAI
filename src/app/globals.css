@@ -135,6 +135,15 @@
   --muted-foreground: oklch(0.705 0.015 286.067);
   --accent: oklch(0.274 0.006 286.033);
   --accent-foreground: oklch(0.985 0 0);
+  /* The one token that does NOT inherit --brand in dark mode.
+     --brand is lifted here so red TEXT clears 4.5:1 on a dark card, but a
+     lifted red makes a poor button FILL: it reads salmon and forces
+     near-black text onto the label. A button wants the saturated brand red
+     with white on it, which is the light-mode value — white on #e80000 is
+     4.74:1, clearing AA for the label. Same red as light mode, so the
+     primary action looks like one colour in both themes. */
+  --primary: oklch(0.577 0.245 27.325);
+  --primary-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
