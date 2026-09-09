@@ -5,17 +5,16 @@ import { useSearchParams } from "next/navigation";
 import { useActionState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LoginWithCredentials } from "@/action/auth.action";
 
+/**
+ * The card carries no title of its own. The page above it already says
+ * "Welcome to CBG Fitness Center" as the h1, and a second "Login" heading
+ * inches below it is a heading that earns nothing.
+ */
 export function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
   const callbackUrl = useSearchParams().get("callbackUrl") ?? "";
   const [state, formAction, pending] = useActionState(LoginWithCredentials, null);
@@ -23,12 +22,6 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
-        <CardHeader>
-          <CardTitle className="text-3xl">Login</CardTitle>
-          <CardDescription>
-            Enter your email and password to access your account.
-          </CardDescription>
-        </CardHeader>
         <CardContent>
           <form action={formAction} className="flex flex-col gap-6">
             <input type="hidden" name="callbackUrl" value={callbackUrl} />
@@ -58,16 +51,13 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
             </div>
 
             {state && !state.success && (
-              <p
-                role="alert"
-                className="text-sm font-medium text-destructive"
-              >
+              <p role="alert" className="text-destructive text-sm font-medium">
                 {state.error}
               </p>
             )}
 
             <Button type="submit" className="w-full" disabled={pending}>
-              {pending ? "Signing in…" : "Login"}
+              {pending ? "Signing in…" : "Sign in"}
             </Button>
 
             <div className="text-center text-sm">
