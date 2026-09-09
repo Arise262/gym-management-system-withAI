@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Field, FormErrorSummary } from "@/components/form-field";
+import { normalizePhMobile } from "@/lib/phone";
 import { AddMember, MemberInput } from "@/action/member.action";
 import { useLoading } from "@/hooks/use-loading";
 import { capitalizeWords } from "@/lib/utils";
@@ -38,10 +39,13 @@ function validate(state: MemberInput): Errors {
   const errors: Errors = {};
   if (!state.name.trim()) errors.name = "Enter the member's name.";
 
-  const phone = String(state.phone ?? "").replace(/\D/g, "");
-  if (!phone) errors.phone = "Enter a mobile number.";
-  else if (phone.length !== 10)
-    errors.phone = `Philippine mobile numbers are 10 digits after the country code — you entered ${phone.length}.`;
+  // Accept 0917…, +63 917… and 9171234567 alike, the way the member-facing
+  // forms do. Rejecting the 09XX form that everyone in the Philippines
+  // actually writes made the front desk retype every number.
+  const phone = normalizePhMobile(String(state.phone ?? ""));
+  if (!String(state.phone ?? "").trim()) errors.phone = "Enter a mobile number.";
+  else if (!phone)
+    errors.phone = "That does not look like a Philippine mobile number — try 0917 123 4567.";
 
   if (state.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.email))
     errors.email = "That does not look like an email address.";
@@ -82,7 +86,8 @@ const NewMemberPage = () => {
     try {
       const response = await AddMember({
         ...formState,
-        phone: Number(String(formState.phone).replace(/\D/g, "")),
+        // validate() already rejected anything normalizePhMobile cannot parse.
+        phone: Number(normalizePhMobile(String(formState.phone))),
       });
       if (response?.id) {
         toast.success(`${formState.name} added.`);
