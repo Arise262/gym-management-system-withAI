@@ -1,18 +1,26 @@
 import { Separator } from '@/components/ui/separator'
-import React from 'react'
+import PendingPayments from './PendingPayments'
 
-type Props = {}
+/**
+ * This page was a copy-paste stub: it rendered the heading "Create a new sale"
+ * and a separator, and nothing else — while the working table sat unused in
+ * PendingPayments.tsx beside it, imported only by the dashboard. Anyone who
+ * reached this route got a wrong title above an empty page.
+ */
+export const metadata = { title: 'Pending payments' }
 
-const page = (props: Props) => {
+export default function Page() {
     return (
-        <div className="max-w-xl w-full mx-auto space-y-6 p-4">
+        <div className="mx-auto w-full max-w-4xl space-y-6 p-4">
             <div>
-                <h1 className="text-3xl font-semibold">Create a new sale</h1>
-                <p className="text-muted-foreground text-sm">Fields marked with <span className="text-destructive">*</span> are required</p>
+                <h1 className="font-display text-3xl font-semibold">Pending payments</h1>
+                <p className="text-muted-foreground text-sm">
+                    Memberships with an outstanding balance. Message a member to chase it, or take
+                    the payment online.
+                </p>
             </div>
-            <Separator className="" />
+            <Separator />
+            <PendingPayments />
         </div>
     )
 }
-
-export default page

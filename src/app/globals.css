@@ -3,11 +3,39 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * Barlow ships no ₱ (U+20B1). Verified by canvas measurement: in Barlow the
+ * digit 0, P and $ all differ from the generic fallback width, while ₱ matches
+ * it exactly — i.e. the browser is already substituting another face for that
+ * one character. Left alone, the substitute is whatever the viewer's machine
+ * happens to pick, so "₱12,000" shows a mismatched sign that differs between
+ * a Windows laptop and a phone.
+ *
+ * This pins that one codepoint to a deliberate, widely-installed stack so the
+ * peso sign renders the same way everywhere. It costs no download — every
+ * source is local().
+ */
+@font-face {
+  font-family: "PesoSign";
+  src:
+    local("Segoe UI"),
+    local("Roboto"),
+    local("Helvetica Neue"),
+    local("Arial"),
+    local("Noto Sans");
+  unicode-range: U+20B1;
+  font-display: swap;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-barlow), "PesoSign", ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-barlow-condensed), var(--font-barlow), "PesoSign", ui-sans-serif, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-surface: var(--surface);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -45,6 +73,14 @@
 
 :root {
   --radius: 0.75rem;
+  /* Brand red, sampled from the CBG shield in scripts/brand/logo-source.jpg
+     (#e80000). Used for emphasis and the active state — NOT for chart series,
+     which stay on the validated blues below. */
+  --brand: oklch(0.577 0.245 27.325);
+  --brand-foreground: oklch(0.985 0 0);
+  /* The page ground sits a step below --card so stacked cards read as raised
+     surfaces instead of dissolving into the background. */
+  --surface: oklch(0.976 0.002 286.35);
   --background: oklch(1 0 0);
   --foreground: oklch(0.141 0.005 285.823);
   --card: oklch(1 0 0);
@@ -79,6 +115,10 @@
 }
 
 .dark {
+  /* Brand red lifted for dark ground so it still clears 4.5:1 on --card. */
+  --brand: oklch(0.704 0.191 22.216);
+  --brand-foreground: oklch(0.141 0.005 285.823);
+  --surface: oklch(0.178 0.005 285.8);
   --background: oklch(0.141 0.005 285.823);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.21 0.006 285.885);
@@ -119,5 +159,37 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-barlow), "PesoSign", ui-sans-serif, system-ui, sans-serif;
+  }
+  /* Headings carry the condensed cut. Doing it here rather than per-component
+     means every existing h1..h4 in the app picks up the athletic voice without
+     each file having to opt in. */
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-barlow-condensed), var(--font-barlow), "PesoSign", ui-sans-serif, sans-serif;
+    letter-spacing: -0.01em;
+  }
+  /* Figures line up in columns and never change width as they tick over. */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@utility font-display {
+  font-family: var(--font-barlow-condensed), var(--font-barlow), "PesoSign", ui-sans-serif, sans-serif;
+}
+
+/* Respect the OS "reduce motion" setting everywhere, including the shadcn and
+   tw-animate-css transitions we do not author directly. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

@@ -5,7 +5,7 @@ import UserDetails from './_components/UserDetails'
 import Header from './_components/Header'
 import AttendanceSum from './_components/AttendanceSum'
 import Sales from './_components/Sales'
-import { Separator } from '@/components/ui/separator'
+import QuickActions from './_components/QuickActions'
 import { Button } from '@/components/ui/button'
 import LogoutButton from '@/components/custom/LogoutButton'
 import { GetUnreadCount } from '@/action/notification.action'
@@ -17,19 +17,31 @@ export default async function Page() {
   const unread = await GetUnreadCount()
 
   return (
-    <div className='p-4 grid grid-cols-1 gap-4 max-w-xl mx-auto'>
-      <Header user_name={data.user?.name} unread={unread} />
-      <UserDetails user={data.user} />
-      <AttendanceSum attendance={data.allAttendanceOfMember} />
-      <Sales activeSales={data.activeSales} expiredSales={data.inActiveSales} />
-      <Separator />
-      <Link href={'/member/change-password'}>
-        <Button variant={'ghost'} className='w-fit'>
-          <IconKey className='mr-2' />
-          Change password
-        </Button>
-      </Link>
-      <LogoutButton className='text-red-500 w-fit' />
+    // max-w-2xl rather than max-w-xl: the action grid needs the room, and the
+    // page reads as a column on a phone either way.
+    <div className='bg-surface min-h-svh'>
+      <div className='mx-auto flex max-w-2xl flex-col gap-6 p-4 pb-12'>
+        <Header user_name={data.user?.name} unread={unread} />
+
+        {/* Actions come first. What a member opens this app to do is start a
+            workout or check their plan — not read their own phone number. */}
+        <QuickActions />
+
+        <Sales activeSales={data.activeSales} expiredSales={data.inActiveSales} />
+        <AttendanceSum attendance={data.allAttendanceOfMember} />
+        <UserDetails user={data.user} />
+
+        {/* Account actions are deliberately quiet and last. */}
+        <div className='flex flex-wrap items-center gap-2 pt-2'>
+          <Button asChild variant='outline' size='sm'>
+            <Link href='/member/change-password'>
+              <IconKey className='size-4' />
+              Change password
+            </Link>
+          </Button>
+          <LogoutButton className='text-muted-foreground hover:text-destructive w-fit' />
+        </div>
+      </div>
     </div>
   )
 }

@@ -1,79 +1,54 @@
-import { Button } from '@/components/ui/button'
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { IconLocation } from '@tabler/icons-react'
-import { Calendar, CalendarCheck, CalendarPlus, CreditCard, Dumbbell, Mail, MessageCircle, Phone, Sparkles, TrendingUp } from 'lucide-react'
-import Link from 'next/link'
-import React from 'react'
+import { Calendar, CalendarCheck, Mail, MapPin, Phone } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { DetailList, DetailRow } from '@/components/detail-list'
+import { formatAppDate } from '@/lib/format'
 
 type Props = {
     user: any
 }
 
-const UserDetails = ({
-    user
-}: Props) => {
-  return (
-    <Card>
-        <CardHeader>
-            <CardTitle className='text-muted-foreground'>Member Details</CardTitle>
-            <CardAction>
-                <div className='flex gap-2'>
-                    <Link href={'/member/workout-plan'}>
-                        <Button>
-                            <Sparkles className='mr-2' size={16}/>
-                            My Plan
-                        </Button>
-                    </Link>
-                    <Link href={'/member/progress'}>
-                        <Button variant='outline'>
-                            <TrendingUp className='mr-2' size={16}/>
-                            Progress
-                        </Button>
-                    </Link>
-                    <Link href={'/member/chat'}>
-                        <Button variant='outline'>
-                            <Sparkles className='mr-2' size={16}/>
-                            Assistant
-                        </Button>
-                    </Link>
-                    <Link href={'/member/payments'}>
-                        <Button variant='outline'>
-                            <CreditCard className='mr-2' size={16}/>
-                            Payments
-                        </Button>
-                    </Link>
-                    <Link href={'/member/messages'}>
-                        <Button variant='outline'>
-                            <MessageCircle className='mr-2' size={16}/>
-                            Messages
-                        </Button>
-                    </Link>
-                    <Link href={'/member/trainers'}>
-                        <Button variant='outline'>
-                            <CalendarPlus className='mr-2' size={16}/>
-                            Book a trainer
-                        </Button>
-                    </Link>
-                    <Link href={'/member/workout'}>
-                        <Button variant='outline'>
-                            <Dumbbell className='mr-2' size={16}/>
-                            Exercises
-                        </Button>
-                    </Link>
-                </div>
-            </CardAction>
-        </CardHeader>
-        <CardContent>
-            <div className='flex flex-col gap-2'>
-                <div className='flex items-center gap-4 text-muted-foreground'><Phone className='mr-2' size={16}/> <span className='text-foreground'>{user?.phone}</span></div>
-                <div className='flex items-center gap-4 text-muted-foreground'><Mail className='mr-2' size={16}/> <span className='text-foreground'>{user?.email}</span></div>
-                <div className='flex items-center gap-4 text-muted-foreground'><IconLocation className='mr-2' size={16}/><span className='text-foreground'>{user?.address}</span> </div>
-                <div className='flex items-center gap-4 text-muted-foreground'><Calendar className='mr-2' size={16}/> <span className='text-foreground'>{user?.DOB}</span></div>
-                <div className='flex items-center gap-4 text-muted-foreground'><CalendarCheck className='mr-2' size={16}/> <span className='text-foreground'>{user?.DOJ}</span></div>
-            </div>
-        </CardContent>
-    </Card>
-  )
+/**
+ * Member details.
+ *
+ * The navigation that used to be crammed into this card's <CardAction> slot
+ * now lives in QuickActions, so this card does one job: show the member's own
+ * record, every value under a label, dates rendered as words instead of raw
+ * `dd-MM-yyyy`.
+ */
+const UserDetails = ({ user }: Props) => {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className='text-base'>Your details</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <DetailList>
+                    <DetailRow
+                        label='Phone'
+                        icon={<Phone />}
+                        value={user?.phone ? String(user.phone) : undefined}
+                    />
+                    <DetailRow label='Email' icon={<Mail />} value={user?.email} />
+                    <DetailRow
+                        label='Address'
+                        icon={<MapPin />}
+                        value={user?.address}
+                        fallback='No address on file'
+                    />
+                    <DetailRow
+                        label='Date of birth'
+                        icon={<Calendar />}
+                        value={formatAppDate(user?.DOB)}
+                    />
+                    <DetailRow
+                        label='Member since'
+                        icon={<CalendarCheck />}
+                        value={formatAppDate(user?.DOJ)}
+                    />
+                </DetailList>
+            </CardContent>
+        </Card>
+    )
 }
 
 export default UserDetails

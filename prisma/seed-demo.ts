@@ -101,8 +101,14 @@ async function upsertMember(email: string, name: string) {
 }
 
 async function main() {
-  await upsertTrainer("trainer@cbgfitness.local", "Demo Trainer");
-  await upsertMember("member@cbgfitness.local", "Demo Member");
+  await upsertTrainer("trainer@cbgfitness.local", "Paolo Ramos");
+  // ⚠ The LIVE member login was changed by hand to a real mailbox so Brevo
+  // email actually delivers. This file deliberately keeps the .local
+  // placeholder, because a personal address must not be committed to a public
+  // repo — which means RUNNING THIS SCRIPT REVERTS THAT LOGIN and silently
+  // breaks the email demo. Change the name in the database instead, and
+  // re-point the login afterwards if you ever do run this.
+  await upsertMember("member@cbgfitness.local", "Miguel Torres");
 
   console.log("Demo accounts ready (password for both: " + DEMO_PASSWORD + ")");
   console.log("  TRAINER  trainer@cbgfitness.local");
