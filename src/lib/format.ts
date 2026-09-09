@@ -37,6 +37,28 @@ export function toAppDate(value?: string | null): string | undefined {
   return undefined;
 }
 
+/**
+ * Today, as the GYM reckons it — `dd-MM-yyyy` in Asia/Manila.
+ *
+ * Vercel runs functions in UTC, so `format(new Date(), "dd-MM-yyyy")` on the
+ * server is the UTC date. Between midnight and 08:00 Manila that is still
+ * YESTERDAY, so a member logging an early-morning workout had it filed under
+ * the wrong day — and their streak and adherence counted it there too.
+ *
+ * The cron already had this rule (`manilaDay` in notifications/daily.ts);
+ * the logging path never got it.
+ */
+export function gymToday(asOf: Date = new Date()): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Manila",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(asOf);
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+  return `${get("day")}-${get("month")}-${get("year")}`;
+}
+
 /** Whole pesos, thousands-separated, no decimals — the app-wide money format. */
 export function pesos(n: number): string {
   return `₱${Math.round(n).toLocaleString("en-PH")}`;

@@ -1,6 +1,7 @@
 import { format } from "date-fns";
 import prisma from "@/lib/prisma";
 import { claude, MODELS, hasClaudeKey } from "@/lib/claude";
+import { gymToday } from "@/lib/format";
 
 /**
  * The member-facing assistant.
@@ -46,7 +47,7 @@ type Turn = { role: "user" | "assistant"; content: string };
  * decided to show it.
  */
 export async function buildMemberContext(memberId: string): Promise<string> {
-  const today = format(new Date(), "dd-MM-yyyy");
+  const today = gymToday();
 
   // Sequential, not Promise.all. DATABASE_URL sets connection_limit=1 (the
   // standard serverless setting for the Supabase transaction pooler), so

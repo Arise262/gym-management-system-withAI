@@ -6,7 +6,7 @@ import { format } from "date-fns";
 import { AuthError } from "next-auth";
 import prisma from "@/lib/prisma";
 import { normalizePhMobile } from "@/lib/phone";
-import { toAppDate } from "@/lib/format";
+import { toAppDate, gymToday } from "@/lib/format";
 import { signIn, signOut, BCRYPT_ROUNDS } from "@/lib/auth";
 import { requireUser } from "@/lib/session";
 import { generateUniqueMemberCode } from "@/action/member.action";
@@ -116,7 +116,7 @@ export async function RegisterMember(
           phone: BigInt(normalizedPhone),
           gender,
           DOB: dob,
-          DOJ: format(new Date(), "dd-MM-yyyy"),
+          DOJ: gymToday(),
         },
       });
     });

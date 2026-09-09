@@ -12,6 +12,7 @@ import { Clock } from "lucide-react";
 import Link from "next/link";
 import React, { useEffect } from "react";
 import { toast } from "sonner";
+import { gymToday } from "@/lib/format";
 
 type Props = {};
 
@@ -37,7 +38,7 @@ const page = (props: Props) => {
     fetchData();
   }, [refresh]);
   async function fetchTodaysAttendance() {
-    const data = await GetAttendanceByDate(format(new Date(), "dd-MM-yyyy"));
+    const data = await GetAttendanceByDate(gymToday());
     console.log(data);
     setAttendanceList(data);
   }
@@ -47,7 +48,7 @@ const page = (props: Props) => {
     if (!selectedMember) return;
     const newAttendance = {
       member_id: selectedMember,
-      date: format(new Date(), "dd-MM-yyyy"),
+      date: gymToday(),
       time: format(new Date(), "HH:mm:ss"),
     };
     const data = await AddAttendance(newAttendance);

@@ -15,6 +15,7 @@ import {
 } from "date-fns";
 import { SalesResponse } from "./sales.action";
 import { constants } from "buffer";
+import { gymToday } from "@/lib/format";
 // import { Gender } from '@prisma/client';
 type Gender = "male" | "female" | "other";
 // Type definitions
@@ -319,7 +320,7 @@ export async function GetMembersWithTodaysBirthday(): Promise<
 > {
   await requireRole("TRAINER");
   try {
-    const today = format(new Date(), "dd-MM-yyyy");
+    const today = gymToday();
     const todayDayMonth = today.slice(0, 5); // Get dd-MM
 
     const members = await prisma.member.findMany({

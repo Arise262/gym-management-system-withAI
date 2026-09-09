@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { format } from "date-fns";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
+import { gymToday } from "@/lib/format";
 import { requireMemberId, requireRole, requireUser } from "@/lib/session";
 
 /**
@@ -64,7 +65,7 @@ export async function GetDayForLogging(planDayId: string) {
   });
   if (!day) return null;
 
-  const today = format(new Date(), DATE_FMT);
+  const today = gymToday();
   const session = await prisma.workoutSession.findFirst({
     where: { memberId, planDayId, date: today },
     include: { logs: true },
@@ -190,7 +191,7 @@ export async function LogWorkoutSession(
     return { success: false, error: "Every exercise is marked skipped — nothing to record." };
   }
 
-  const today = format(new Date(), DATE_FMT);
+  const today = gymToday();
 
   try {
     // One transaction: a session whose logs failed to write would count toward

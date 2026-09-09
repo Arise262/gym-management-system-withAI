@@ -14,6 +14,7 @@ import {
   endOfMonth,
 } from "date-fns";
 import { MemberResponse } from "./member.action";
+import { gymToday } from "@/lib/format";
 
 // Type definitions
 export interface SalesInput {
@@ -318,7 +319,7 @@ export async function UpdateSaleById(
 export async function GetAllActiveSale(): Promise<SalesResponse[]> {
   await requireRole("TRAINER");
   try {
-    const today = format(new Date(), "dd-MM-yyyy");
+    const today = gymToday();
     const todayDate = parse(today, "dd-MM-yyyy", new Date());
 
     const sales = await prisma.sales.findMany({
@@ -343,7 +344,7 @@ export async function GetActiveSaleByMemberId(
 ): Promise<SalesResponse[]> {
   await requireRole("TRAINER");
   try {
-    const today = format(new Date(), "dd-MM-yyyy");
+    const today = gymToday();
     const todayDate = parse(today, "dd-MM-yyyy", new Date());
 
     const sales = await prisma.sales.findMany({

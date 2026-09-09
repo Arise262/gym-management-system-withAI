@@ -15,6 +15,7 @@ import { NotificationBell } from "@/components/notification-bell";
 import { AnnouncementForm } from "@/components/announcement-form";
 import { StatGrid, StatTile } from "@/components/stat-tile";
 import { EmptyState } from "@/components/empty-state";
+import { gymToday } from "@/lib/format";
 
 export default async function Page() {
   const user = await requireRole("TRAINER");
@@ -22,7 +23,7 @@ export default async function Page() {
   const unread = await GetUnreadCount();
   const clients = await GetTrainerClients();
 
-  const today = format(new Date(), "dd-MM-yyyy");
+  const today = gymToday();
   const upcoming = bookings.filter((b) => !["COMPLETED", "CANCELLED", "NO_SHOW"].includes(b.status));
   const todayCount = bookings.filter((b) => b.date === today && b.status !== "CANCELLED").length;
   const pendingCount = bookings.filter((b) => b.status === "PENDING").length;
