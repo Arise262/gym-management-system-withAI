@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Field, FormErrorSummary } from "@/components/form-field";
+import { normalizePhMobile } from "@/lib/phone";
 import { DatePickerDemo } from "@/components/custom/date-picker";
 import ItemSelector from "@/components/custom/item-selector";
 import { AddEnquiry, type EnquiryInput } from "@/action/enquiries.action";
@@ -42,10 +43,13 @@ function validate(d: Draft): Errors {
   const errors: Errors = {};
   if (!d.name.trim()) errors.name = "Enter a name.";
 
-  const phone = d.phone.replace(/\D/g, "");
-  if (!phone) errors.phone = "Enter a mobile number.";
-  else if (phone.length !== 10)
-    errors.phone = `Philippine mobile numbers are 10 digits after the country code — you entered ${phone.length}.`;
+  // normalizePhMobile accepts 0917…, +63 917… and 9171234567 alike and returns
+  // null for anything that is not a real PH mobile. That is what stops BigInt()
+  // at the submit site from silently truncating a leading zero.
+  const phone = normalizePhMobile(d.phone);
+  if (!d.phone.trim()) errors.phone = "Enter a mobile number.";
+  else if (!phone)
+    errors.phone = "That does not look like a Philippine mobile number — try 0917 123 4567.";
 
   // The label carried a required marker but nothing ever checked it, so an
   // enquiry could be saved with no follow-up date and quietly never followed up.
@@ -82,7 +86,8 @@ const NewEnquiryPage = () => {
     try {
       const payload: EnquiryInput = {
         name: draft.name.trim(),
-        phone: BigInt(draft.phone.replace(/\D/g, "")),
+        // validate() already rejected anything normalizePhMobile cannot parse.
+        phone: BigInt(normalizePhMobile(draft.phone)!),
         followupDate: draft.followupDate,
         message: draft.message.trim() || undefined,
         type: draft.type as EnquiryInput["type"],

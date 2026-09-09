@@ -2,12 +2,17 @@ import Link from "next/link";
 import { IconArrowLeft } from "@tabler/icons-react";
 import { Button } from "@/components/ui/button";
 import { FitnessProfileForm } from "@/components/fitness-profile-form";
+import { PersonalDetailsForm } from "@/components/personal-details-form";
 import { GetMyFitnessProfile, GetEquipmentOptions } from "@/action/workout-plan.action";
+import { GetMyDetails } from "@/action/profile.action";
+
+export const metadata = { title: "Your profile" };
 
 export default async function Page() {
-  const [profile, equipmentOptions] = await Promise.all([
+  const [profile, equipmentOptions, details] = await Promise.all([
     GetMyFitnessProfile(),
     GetEquipmentOptions(),
+    GetMyDetails(),
   ]);
 
   return (
@@ -18,6 +23,12 @@ export default async function Page() {
           Back
         </Button>
       </Link>
+
+      {/* Personal details first: this is what a member comes here to fix after
+          a typo at sign-up. The training questionnaire below is a longer,
+          less urgent task. */}
+      <PersonalDetailsForm details={details} />
+
       <FitnessProfileForm profile={profile} equipmentOptions={equipmentOptions} />
     </div>
   );

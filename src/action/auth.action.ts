@@ -5,6 +5,7 @@ import { z } from "zod";
 import { format } from "date-fns";
 import { AuthError } from "next-auth";
 import prisma from "@/lib/prisma";
+import { normalizePhMobile } from "@/lib/phone";
 import { signIn, signOut, BCRYPT_ROUNDS } from "@/lib/auth";
 import { requireUser } from "@/lib/session";
 import { generateUniqueMemberCode } from "@/action/member.action";
@@ -47,10 +48,9 @@ const registerSchema = z
   .object({
     name: z.string().trim().min(2, "Please enter your full name."),
     email: z.string().trim().toLowerCase().email("Enter a valid email address."),
-    phone: z
-      .string()
-      .trim()
-      .regex(/^\d{10,15}$/, "Enter a valid phone number (digits only)."),
+    // Accepts 0917..., +63 917... or 9171234567; normalizePhMobile() below
+    // converts to the canonical ten digits before BigInt sees it.
+    phone: z.string().trim().min(1, "Enter your mobile number."),
     password: z.string().min(8, "Password must be at least 8 characters."),
     confirmPassword: z.string(),
     gender: z.enum(["male", "female", "other"]),
@@ -75,6 +75,16 @@ export async function RegisterMember(
   }
   const { name, email, phone, password, gender, DOB } = parsed.data;
 
+  // BigInt has no leading zero, so "0917..." stored raw comes back one digit
+  // short and undiallable. Reject a malformed number rather than truncate it.
+  const normalizedPhone = normalizePhMobile(phone);
+  if (!normalizedPhone) {
+    return {
+      success: false,
+      error: "Enter a valid mobile number, for example 0917 123 4567.",
+    };
+  }
+
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
     return { success: false, error: "An account with that email already exists." };
@@ -94,7 +104,7 @@ export async function RegisterMember(
           name,
           email,
           memberCode,
-          phone: BigInt(phone),
+          phone: BigInt(normalizedPhone),
           gender,
           DOB,
           DOJ: format(new Date(), "dd-MM-yyyy"),
