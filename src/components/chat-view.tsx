@@ -30,11 +30,18 @@ export function ChatView({
   mode,
   initialMessages,
   emptyState,
+  suggestions = [],
 }: {
   conversationId: string;
   mode: ChatMode;
   initialMessages: ChatMessage[];
   emptyState: React.ReactNode;
+  /**
+   * Starter prompts shown only on an empty thread. A blank chat box tells the
+   * member nothing about what the assistant can actually answer, so most people
+   * either type nothing or ask it something it has no data for.
+   */
+  suggestions?: string[];
 }) {
   const [messages, setMessages] = React.useState<ChatMessage[]>(initialMessages);
   const [draft, setDraft] = React.useState("");
@@ -120,7 +127,30 @@ export function ChatView({
     <div className="flex h-[calc(100dvh-8rem)] flex-col gap-3">
       <div className="flex-1 space-y-3 overflow-y-auto pr-1">
         {messages.length === 0 ? (
-          <div className="text-muted-foreground py-10 text-center text-sm">{emptyState}</div>
+          // Centred in the scroll area rather than pinned to the top of it —
+          // the old layout left a ~500px void between the intro line and the
+          // composer.
+          <div className="flex h-full flex-col items-center justify-center gap-4 px-2 text-center">
+            <span className="bg-brand/10 text-brand flex size-12 items-center justify-center rounded-full">
+              <IconSparkles className="size-6" aria-hidden="true" />
+            </span>
+            <div className="text-muted-foreground max-w-sm text-sm text-balance">{emptyState}</div>
+            {suggestions.length > 0 && (
+              <ul className="flex flex-wrap justify-center gap-2">
+                {suggestions.map((s) => (
+                  <li key={s}>
+                    <button
+                      type="button"
+                      onClick={() => setDraft(s)}
+                      className="border-border hover:border-brand/50 hover:bg-accent focus-visible:ring-ring cursor-pointer rounded-full border px-3 py-1.5 text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                    >
+                      {s}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         ) : (
           messages.map((m) => <Bubble key={m.id} m={m} />)
         )}
@@ -166,11 +196,15 @@ function Bubble({ m }: { m: ChatMessage }) {
   return (
     <div className={`flex ${mine ? "justify-end" : "justify-start"}`}>
       <div
+        // The assistant and a human trainer used to render identically (both
+        // branches of the ternary were "bg-muted"), so in a thread you could
+        // not tell a generated reply from a person's. The assistant now carries
+        // a brand-tinted edge.
         className={`max-w-[80%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${
           mine
             ? "bg-primary text-primary-foreground"
             : isAssistant
-              ? "bg-muted"
+              ? "bg-brand/5 border-brand/20 border"
               : "bg-muted"
         }`}
       >

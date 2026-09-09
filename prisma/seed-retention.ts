@@ -23,6 +23,11 @@ type Profile = {
   code: string;
   name: string;
   gender: "male" | "female" | "other";
+  /** dd-MM-yyyy. Everyone used to share 01-01-1995, so every member was 31. */
+  dob: string;
+  /** 10 digits, no +63 and no leading 0 — the column is a BigInt. */
+  phone: string;
+  address: string;
   joinedDaysAgo: number;
   /** Days ago on which this member checked in. */
   visits: number[];
@@ -40,8 +45,11 @@ type Profile = {
 const PROFILES: Profile[] = [
   {
     code: "RET-0001",
-    name: "Grace Regular",
+    name: "Angelica Reyes",
     gender: "female",
+    dob: "14-03-1996",
+    phone: "9175534118",
+    address: "12 Kalayaan Ave, Brgy. Poblacion, Makati City",
     joinedDaysAgo: 400,
     // Three times a week, unbroken, right up to yesterday.
     visits: Array.from({ length: 26 }, (_, i) => i * 2 + 1),
@@ -52,8 +60,11 @@ const PROFILES: Profile[] = [
   },
   {
     code: "RET-0002",
-    name: "Marco Fading",
+    name: "Marco Villanueva",
     gender: "male",
+    dob: "22-07-1989",
+    phone: "9186642907",
+    address: "88 Chino Roces Ave, Brgy. Pio del Pilar, Makati City",
     joinedDaysAgo: 300,
     // Was going 3x/week last month, down to once a fortnight now.
     visits: [6, 20, 33, 36, 39, 42, 45, 48, 51, 54, 57],
@@ -64,8 +75,11 @@ const PROFILES: Profile[] = [
   },
   {
     code: "RET-0003",
-    name: "Ines Lapsing",
+    name: "Ynez Bautista",
     gender: "female",
+    dob: "05-11-1998",
+    phone: "9209981345",
+    address: "5 Jupiter St, Brgy. Bel-Air, Makati City",
     joinedDaysAgo: 240,
     // Stopped six weeks ago and the membership runs out this month.
     visits: [44, 47, 51, 55, 58],
@@ -76,8 +90,11 @@ const PROFILES: Profile[] = [
   },
   {
     code: "RET-0004",
-    name: "Ravi Gone",
+    name: "Rafael Dizon",
     gender: "male",
+    dob: "30-01-1985",
+    phone: "9954471028",
+    address: "231 Pasong Tamo Ext, Brgy. Magallanes, Makati City",
     joinedDaysAgo: 500,
     // Nothing in four months and the membership lapsed weeks ago.
     visits: [],
@@ -88,8 +105,11 @@ const PROFILES: Profile[] = [
   },
   {
     code: "RET-0005",
-    name: "Nadia Newjoiner",
+    name: "Nadine Aquino",
     gender: "female",
+    dob: "09-09-2002",
+    phone: "9776120593",
+    address: "17 Kamagong St, Brgy. San Antonio, Makati City",
     joinedDaysAgo: 4,
     // Signed up on Monday and has not been in yet. Should NOT read as at-risk.
     visits: [],
@@ -116,13 +136,21 @@ async function main() {
   for (const p of PROFILES) {
     const member = await prisma.member.upsert({
       where: { memberCode: p.code },
-      update: { DOJ: daysAgo(p.joinedDaysAgo) },
+      update: {
+        name: p.name,
+        gender: p.gender,
+        phone: BigInt(p.phone),
+        DOB: p.dob,
+        address: p.address,
+        DOJ: daysAgo(p.joinedDaysAgo),
+      },
       create: {
         memberCode: p.code,
         name: p.name,
         gender: p.gender,
-        phone: BigInt(9170000000 + Number(p.code.slice(-4))),
-        DOB: "01-01-1995",
+        phone: BigInt(p.phone),
+        DOB: p.dob,
+        address: p.address,
         DOJ: daysAgo(p.joinedDaysAgo),
       },
     });

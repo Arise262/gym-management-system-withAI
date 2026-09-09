@@ -46,6 +46,10 @@ export function DataTable({
 }: Props) {
     const [searchTerm, setSearchTerm] = useState("")
 
+    // Leading "#" column + data columns + action columns. Used by the loading
+    // and empty rows so they span the whole table.
+    const totalColumns = 1 + columns.length + (actionColumns?.length ?? 0)
+
     const filteredRows = useMemo(() => {
         if (!searchTerm) return dataRows
 
@@ -100,16 +104,25 @@ export function DataTable({
                     </TableHeader>
                     {
                         isLoading ? (
-                            <TableBody className="flex-row gap-2 items-center justify-center p-4">
-                                <div className={`w-full flex items-center justify-center p-4 gap-4 col-span-[${columns.length}]`}>
-
-                                    <LoaderCircleIcon
-                                        className="-ms-1 animate-spin"
-                                        size={16}
-                                        aria-hidden="true"
-                                    /> Loading
-                                </div>
-
+                            // This used to put a <div> directly inside <tbody>, which is
+                            // invalid HTML — React logged "In HTML, <div> cannot be a child
+                            // of <tbody>" and the whole dashboard tree was regenerated on
+                            // the client with a hydration mismatch. A row/cell is the only
+                            // legal way to span a table. (The old `col-span-[n]` was a grid
+                            // class on a table AND a dynamic string Tailwind never emits.)
+                            <TableBody>
+                                <TableRow>
+                                    <TableCell colSpan={totalColumns} className="h-24">
+                                        <div className="text-muted-foreground flex items-center justify-center gap-2">
+                                            <LoaderCircleIcon
+                                                className="-ms-1 animate-spin"
+                                                size={16}
+                                                aria-hidden="true"
+                                            />
+                                            Loading
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
                             </TableBody>
                         ) : (
                             <TableBody className="">
@@ -147,7 +160,7 @@ export function DataTable({
                                 ) : (
                                     <TableRow>
                                         <TableCell
-                                            colSpan={columns.length}
+                                            colSpan={totalColumns}
                                             className="h-24 text-center"
                                         >
                                             No results found
