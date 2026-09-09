@@ -224,11 +224,14 @@ function scorePlanAdherence(s: RetentionSignals): { n: number; detail: string } 
 
 function scorePayment(s: RetentionSignals): { n: number; detail: string } {
   if (s.unpaidPesos <= 0) return { n: 0, detail: "paid up" };
-  // Any arrears is a signal; ₱5,000 outstanding is treated as the worst case.
+  // Any arrears is a signal; the worst case is half a year of missed bills at
+  // ₱600 a month, so ₱3,600 saturates the factor. Scaled to what CBG actually
+  // charges — the old ₱5,000 ceiling came from an invented ₱12,000 membership
+  // and left realistic arrears barely registering.
   // A balance is a weak churn predictor on its own, which is why this carries
   // the smallest weight — plenty of committed members pay late.
   return {
-    n: unit(s.unpaidPesos / 5000),
+    n: unit(s.unpaidPesos / (600 * 6)),
     detail: `₱${s.unpaidPesos.toLocaleString()} outstanding`,
   };
 }
