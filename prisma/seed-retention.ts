@@ -19,6 +19,20 @@ const today = new Date();
 const daysAgo = (n: number) => format(subDays(today, n), FMT);
 const daysAhead = (n: number) => format(addDays(today, n), FMT);
 
+/**
+ * What CBG actually charges: ₱200 once a year to be a member, then ₱600 a
+ * month on top of that. Whole pesos, like everything on Sales and Services —
+ * only Payment.amount is centavos.
+ *
+ * A member's twelve monthly bills are seeded as one sale spanning the year
+ * rather than twelve rows, because the retention signals only ever read the
+ * latest end date and the sum of what is unpaid. Every arrears figure below
+ * is therefore a whole number of missed months.
+ */
+const ANNUAL_FEE = 200;
+const MONTHLY_BILL = 600;
+const YEAR_OF_BILLS = MONTHLY_BILL * 12; // ₱7,200
+
 type Profile = {
   code: string;
   name: string;
@@ -54,8 +68,8 @@ const PROFILES: Profile[] = [
     // Three times a week, unbroken, right up to yesterday.
     visits: Array.from({ length: 26 }, (_, i) => i * 2 + 1),
     membershipEndsInDays: 210,
-    amount: 12000,
-    paid: 12000,
+    amount: YEAR_OF_BILLS,
+    paid: YEAR_OF_BILLS,
     expect: "LOW — the control case",
   },
   {
@@ -69,8 +83,8 @@ const PROFILES: Profile[] = [
     // Was going 3x/week last month, down to once a fortnight now.
     visits: [6, 20, 33, 36, 39, 42, 45, 48, 51, 54, 57],
     membershipEndsInDays: 120,
-    amount: 12000,
-    paid: 12000,
+    amount: YEAR_OF_BILLS,
+    paid: YEAR_OF_BILLS,
     expect: "MEDIUM — frequency trend collapsing",
   },
   {
@@ -84,8 +98,9 @@ const PROFILES: Profile[] = [
     // Stopped six weeks ago and the membership runs out this month.
     visits: [44, 47, 51, 55, 58],
     membershipEndsInDays: 9,
-    amount: 12000,
-    paid: 9000,
+    // Three months behind: ₱1,800 owing.
+    amount: YEAR_OF_BILLS,
+    paid: MONTHLY_BILL * 9,
     expect: "HIGH — absent, expiring, owing",
   },
   {
@@ -99,8 +114,9 @@ const PROFILES: Profile[] = [
     // Nothing in four months and the membership lapsed weeks ago.
     visits: [],
     membershipEndsInDays: -38,
-    amount: 12000,
-    paid: 6000,
+    // Half a year behind: ₱3,600 owing, the worst case scorePayment expects.
+    amount: YEAR_OF_BILLS,
+    paid: MONTHLY_BILL * 6,
     expect: "CRITICAL — every factor firing",
   },
   {
@@ -114,22 +130,34 @@ const PROFILES: Profile[] = [
     // Signed up on Monday and has not been in yet. Should NOT read as at-risk.
     visits: [],
     membershipEndsInDays: 361,
-    amount: 12000,
-    paid: 12000,
+    amount: YEAR_OF_BILLS,
+    paid: YEAR_OF_BILLS,
     expect: "LOW — grace period damps a member with no history",
   },
 ];
 
 async function main() {
-  // Sales rows need a service to point at.
-  const service =
-    (await prisma.services.findFirst({ where: { name: "Annual Membership (demo)" } })) ??
+  // Sales rows need a service to point at. Looked up by name before creating,
+  // so re-running does not pile up duplicate services.
+  const fee =
+    (await prisma.services.findFirst({ where: { name: "Membership Fee" } })) ??
     (await prisma.services.create({
       data: {
-        name: "Annual Membership (demo)",
-        description: "Seeded for the retention dashboard demo.",
-        price: 12000,
+        name: "Membership Fee",
+        description: "Annual membership fee.",
+        price: ANNUAL_FEE,
         duration: 12,
+      },
+    }));
+
+  const monthly =
+    (await prisma.services.findFirst({ where: { name: "Monthly Membership" } })) ??
+    (await prisma.services.create({
+      data: {
+        name: "Monthly Membership",
+        description: "Monthly membership bill.",
+        price: MONTHLY_BILL,
+        duration: 1,
       },
     }));
 
@@ -170,19 +198,38 @@ async function main() {
     }
 
     if (p.membershipEndsInDays !== null) {
+      const start = daysAgo(p.joinedDaysAgo);
+      const end =
+        p.membershipEndsInDays >= 0
+          ? daysAhead(p.membershipEndsInDays)
+          : daysAgo(Math.abs(p.membershipEndsInDays));
+
+      // The ₱200 fee is always settled — nobody joins without paying it — so
+      // it never contributes to arrears. It runs over the same span as the
+      // bills, which keeps it from moving the latest-end-date signal.
       await prisma.sales.create({
         data: {
           member_id: member.id,
-          service_id: service.id,
-          description: "Seeded membership",
+          service_id: fee.id,
+          description: "Annual membership fee",
+          discount: 0,
+          amount: ANNUAL_FEE,
+          paid: ANNUAL_FEE,
+          startDate: start,
+          endDate: end,
+        },
+      });
+
+      await prisma.sales.create({
+        data: {
+          member_id: member.id,
+          service_id: monthly.id,
+          description: "Monthly bills for the membership year",
           discount: 0,
           amount: p.amount,
           paid: p.paid,
-          startDate: daysAgo(p.joinedDaysAgo),
-          endDate:
-            p.membershipEndsInDays >= 0
-              ? daysAhead(p.membershipEndsInDays)
-              : daysAgo(Math.abs(p.membershipEndsInDays)),
+          startDate: start,
+          endDate: end,
         },
       });
     }

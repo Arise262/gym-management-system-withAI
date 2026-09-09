@@ -24,6 +24,11 @@ const daysAhead = (n: number) => format(addDays(today, n), FMT);
 /** The member whose screens the demo walks through. */
 const MEMBER_NAME = "Miguel Torres";
 
+/** What CBG charges: ₱200 a year to be a member, ₱600 a month on top. */
+const ANNUAL_FEE = 200;
+const MONTHLY_BILL = 600;
+const YEAR_OF_BILLS = MONTHLY_BILL * 12; // ₱7,200
+
 async function main() {
   const member = await prisma.member.findFirst({ where: { name: MEMBER_NAME } });
   if (!member) throw new Error(`${MEMBER_NAME} not found — run db:seed:demo first.`);
@@ -31,14 +36,25 @@ async function main() {
   const trainer = await prisma.trainer.findFirst();
   if (!trainer) throw new Error("no trainer found — run db:seed:demo first.");
 
-  const service =
-    (await prisma.services.findFirst({ where: { name: "Annual Membership (demo)" } })) ??
+  const fee =
+    (await prisma.services.findFirst({ where: { name: "Membership Fee" } })) ??
     (await prisma.services.create({
       data: {
-        name: "Annual Membership (demo)",
-        description: "Seeded for the retention dashboard demo.",
-        price: 12000,
+        name: "Membership Fee",
+        description: "Annual membership fee.",
+        price: ANNUAL_FEE,
         duration: 12,
+      },
+    }));
+
+  const monthly =
+    (await prisma.services.findFirst({ where: { name: "Monthly Membership" } })) ??
+    (await prisma.services.create({
+      data: {
+        name: "Monthly Membership",
+        description: "Monthly membership bill.",
+        price: MONTHLY_BILL,
+        duration: 1,
       },
     }));
 
@@ -56,17 +72,33 @@ async function main() {
   await prisma.sales.deleteMany({ where: { member_id: member.id } });
 
   // --- membership, deliberately part-paid --------------------------------
-  // ₱12,000 billed, ₱9,000 collected, ₱3,000 outstanding. The balance is on
-  // purpose: it gives the PayMongo/GCash checkout something real to settle,
-  // and it makes this member show up on Pending Payments.
+  // The ₱200 joining fee, settled. Nobody is a member without it, so it is
+  // never part of the outstanding balance.
   await prisma.sales.create({
     data: {
       member_id: member.id,
-      service_id: service.id,
-      description: "Annual membership — balance payable by GCash",
+      service_id: fee.id,
+      description: "Annual membership fee",
       discount: 0,
-      amount: 12000,
-      paid: 9000,
+      amount: ANNUAL_FEE,
+      paid: ANNUAL_FEE,
+      startDate: daysAgo(60),
+      endDate: daysAhead(305),
+    },
+  });
+
+  // Twelve ₱600 bills = ₱7,200 billed, seven of them collected, so five months
+  // (₱3,000) are outstanding. The balance is on purpose: it gives the
+  // PayMongo/GCash checkout something real to settle, and it makes this member
+  // show up on Pending Payments. It also clears PayMongo's ₱20 minimum.
+  await prisma.sales.create({
+    data: {
+      member_id: member.id,
+      service_id: monthly.id,
+      description: "Monthly bills — balance payable by GCash",
+      discount: 0,
+      amount: YEAR_OF_BILLS,
+      paid: MONTHLY_BILL * 7,
       startDate: daysAgo(60),
       endDate: daysAhead(305),
     },
@@ -156,7 +188,10 @@ async function main() {
   });
 
   console.log(`Activity seeded for ${member.name} (${member.memberCode}):`);
-  console.log(`  membership   ₱12,000 billed · ₱9,000 paid · ₱3,000 outstanding`);
+  console.log(
+    `  membership   ₱${ANNUAL_FEE} fee paid · ₱${YEAR_OF_BILLS.toLocaleString()} billed · ` +
+      `₱${(MONTHLY_BILL * 7).toLocaleString()} paid · ₱${(MONTHLY_BILL * 5).toLocaleString()} outstanding`
+  );
   console.log(`  check-ins    ${visitDays.length}`);
   console.log(`  workouts     ${logged} sessions logged against "${plan?.title ?? "no active plan"}"`);
   console.log(`  bookings     2 with ${trainer.name} (1 completed, 1 upcoming)`);
