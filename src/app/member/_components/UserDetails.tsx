@@ -1,6 +1,4 @@
-import { Calendar, CalendarCheck, Mail, MapPin, Phone } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { DetailList, DetailRow } from '@/components/detail-list'
+import MaskableDetails from './MaskableDetails'
 import { formatAppDate } from '@/lib/format'
 
 type Props = {
@@ -14,40 +12,21 @@ type Props = {
  * now lives in QuickActions, so this card does one job: show the member's own
  * record, every value under a label, dates rendered as words instead of raw
  * `dd-MM-yyyy`.
+ *
+ * This stays a SERVER component and hands MaskableDetails plain strings.
+ * `user` is a Prisma row whose phone is a BigInt, which cannot cross the
+ * client boundary — passing the row straight through would throw at render.
+ * Narrowing it here keeps that conversion in one place.
  */
 const UserDetails = ({ user }: Props) => {
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle className='text-base'>Your details</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <DetailList>
-                    <DetailRow
-                        label='Phone'
-                        icon={<Phone />}
-                        value={user?.phone ? String(user.phone) : undefined}
-                    />
-                    <DetailRow label='Email' icon={<Mail />} value={user?.email} />
-                    <DetailRow
-                        label='Address'
-                        icon={<MapPin />}
-                        value={user?.address}
-                        fallback='No address on file'
-                    />
-                    <DetailRow
-                        label='Date of birth'
-                        icon={<Calendar />}
-                        value={formatAppDate(user?.DOB)}
-                    />
-                    <DetailRow
-                        label='Member since'
-                        icon={<CalendarCheck />}
-                        value={formatAppDate(user?.DOJ)}
-                    />
-                </DetailList>
-            </CardContent>
-        </Card>
+        <MaskableDetails
+            phone={user?.phone ? String(user.phone) : undefined}
+            email={user?.email ?? undefined}
+            address={user?.address ?? undefined}
+            dob={formatAppDate(user?.DOB)}
+            memberSince={formatAppDate(user?.DOJ)}
+        />
     )
 }
 
