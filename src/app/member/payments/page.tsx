@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { PayButton } from "@/components/pay-button";
 import { GetMyOutstanding, GetMyPayments } from "@/action/payment.action";
 import { formatCentavos } from "@/lib/paymongo";
+import { formatAppDate } from "@/lib/format";
 
 export const metadata = { title: "Payments" };
 
@@ -74,7 +75,10 @@ export default async function PaymentsPage({
                   <div>
                     <CardTitle className="text-base">{s.serviceName}</CardTitle>
                     <CardDescription>
-                      {s.startDate} to {s.endDate} · ₱{s.paid.toLocaleString()} of ₱
+                      {/* These are the schema's dd-MM-yyyy STRINGS, so formatAppDate
+                          applies here — unlike paidAt below, which is a real Date. */}
+                      {formatAppDate(s.startDate) ?? s.startDate} to{" "}
+                      {formatAppDate(s.endDate) ?? s.endDate} · ₱{s.paid.toLocaleString()} of ₱
                       {s.amount.toLocaleString()} paid
                     </CardDescription>
                   </div>
