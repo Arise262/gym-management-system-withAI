@@ -1,7 +1,7 @@
 import { format } from "date-fns";
 import prisma from "@/lib/prisma";
 import { claude, MODELS, hasClaudeKey } from "@/lib/claude";
-import { gymToday } from "@/lib/format";
+import { formatAppDate, gymToday, pesos } from "@/lib/format";
 
 /**
  * The member-facing assistant.
@@ -35,7 +35,12 @@ HOW TO ANSWER
 WHAT YOU MUST NOT DO
 - No medical advice, diagnosis, or treatment. If a member describes pain, an injury, dizziness, chest symptoms, or anything that sounds medical, tell them to stop training that area and speak to their trainer or a doctor. Do not suggest exercises to "work around" an injury.
 - No nutrition prescriptions or calorie targets presented as medical guidance.
-- Do not discuss other members. You only ever see one member's data.`;
+- Do not discuss other members. You only ever see one member's data.
+
+HOW TO WRITE IT
+- Plain text only. No markdown: no **bold**, no headings, no bullet or list syntax. The chat bubble prints exactly what you type, so asterisks arrive as asterisks.
+- Write dates the way MEMBER CONTEXT writes them ("10 Oct 2026"). Never reformat one into digits like 10-10-2026.
+- Money is Philippine pesos, written with the sign and no space: ₱600. Not "PHP 600", not "P600".`;
 
 type Turn = { role: "user" | "assistant"; content: string };
 
@@ -45,6 +50,13 @@ type Turn = { role: "user" | "assistant"; content: string };
  * Deliberately a fixed, compact summary rather than raw rows: it keeps the
  * per-turn token cost flat, and it means the model cannot see fields nobody
  * decided to show it.
+ *
+ * Every date handed to the model goes through formatAppDate first. That is not
+ * only cosmetic: the schema stores `dd-MM-yyyy`, and "01-02-2026" is genuinely
+ * ambiguous to a model that has also seen American dates, so it could read a
+ * February membership expiry as January. "1 Feb 2026" cannot be misread, and it
+ * matches what the rest of the app prints — the model quotes these back
+ * verbatim, so whatever format goes in is what the member sees.
  */
 export async function buildMemberContext(memberId: string): Promise<string> {
   const today = gymToday();
@@ -106,20 +118,20 @@ export async function buildMemberContext(memberId: string): Promise<string> {
     select: { riskLevel: true },
   });
 
-  const lines: string[] = [`Today's date: ${today}`, "", `Name: ${member.name}`];
+  const lines: string[] = [`Today's date: ${formatAppDate(today) ?? today}`, "", `Name: ${member.name}`];
 
   if (member.fitnessGoal) lines.push(`Goal: ${member.fitnessGoal.replace(/_/g, " ").toLowerCase()}`);
   if (member.experienceLevel) lines.push(`Experience: ${member.experienceLevel.toLowerCase()}`);
   if (member.workoutDaysPerWeek) lines.push(`Training days per week: ${member.workoutDaysPerWeek}`);
   if (member.targetWeightKg) lines.push(`Target weight: ${member.targetWeightKg} kg`);
   if (member.injuries?.trim()) lines.push(`Stated injuries: ${member.injuries.trim()}`);
-  lines.push(`Member since: ${member.DOJ}`);
+  lines.push(`Member since: ${formatAppDate(member.DOJ) ?? member.DOJ}`);
 
   lines.push("", "ACTIVE PLAN");
   if (!plan) {
     lines.push("None. They have not generated a workout plan yet.");
   } else {
-    lines.push(`"${plan.title}" — ${plan.durationWeeks} weeks, ${plan.daysPerWeek} days/week, started ${format(plan.createdAt, "dd-MM-yyyy")}.`);
+    lines.push(`"${plan.title}" — ${plan.durationWeeks} weeks, ${plan.daysPerWeek} days/week, started ${format(plan.createdAt, "d MMM yyyy")}.`);
     for (const d of plan.days) {
       lines.push(
         d.isRestDay
@@ -135,7 +147,7 @@ export async function buildMemberContext(memberId: string): Promise<string> {
     recentSessions.length === 0
       ? "None logged yet."
       : recentSessions
-          .map((s) => `  ${s.date}: ${s.planDay?.focus ?? "ad-hoc"}${s.durationMinutes ? `, ${s.durationMinutes} min` : ""}${s.perceivedExertion ? `, effort ${s.perceivedExertion}/10` : ""}`)
+          .map((s) => `  ${formatAppDate(s.date) ?? s.date}: ${s.planDay?.focus ?? "ad-hoc"}${s.durationMinutes ? `, ${s.durationMinutes} min` : ""}${s.perceivedExertion ? `, effort ${s.perceivedExertion}/10` : ""}`)
           .join("\n")
   );
 
@@ -143,7 +155,7 @@ export async function buildMemberContext(memberId: string): Promise<string> {
   lines.push(
     bookings.length === 0
       ? "None booked."
-      : bookings.map((b) => `  ${b.date} ${b.startTime}-${b.endTime} with ${b.trainer.name} (${b.status.toLowerCase()})`).join("\n")
+      : bookings.map((b) => `  ${formatAppDate(b.date) ?? b.date} ${b.startTime}-${b.endTime} with ${b.trainer.name} (${b.status.toLowerCase()})`).join("\n")
   );
 
   lines.push("", "MEMBERSHIP");
@@ -152,7 +164,7 @@ export async function buildMemberContext(memberId: string): Promise<string> {
   } else {
     const s = sales[0];
     const due = Math.max(0, s.amount - s.paid);
-    lines.push(`Runs to ${s.endDate}.` + (due > 0 ? ` Outstanding balance: PHP ${due.toLocaleString()}.` : " Paid up."));
+    lines.push(`Runs to ${formatAppDate(s.endDate) ?? s.endDate}.` + (due > 0 ? ` Outstanding balance: ${pesos(due)}.` : " Paid up."));
   }
 
   // Included so the assistant can be encouraging at the right moment. It is
