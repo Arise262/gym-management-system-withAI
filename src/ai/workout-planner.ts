@@ -1,7 +1,7 @@
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import type { Member } from "@prisma/client";
 import { claude, MODELS, hasClaudeKey } from "@/lib/claude";
-import { GeneratedPlanSchema, type GeneratedPlan } from "@/ai/schemas";
+import { GeneratedPlanSchema, PLAN_LIMITS, type GeneratedPlan } from "@/ai/schemas";
 import {
   selectCandidates,
   renderCandidates,
@@ -20,6 +20,7 @@ RULES
 5. Balance the week. Do not train the same muscle group hard on consecutive days.
 6. If the member has stated injuries, do not program anything that loads the affected area, and say how you accommodated it in the rationale.
 7. The rationale must explain the specific choices for THIS member — their goal, level, and constraints — not generic training advice.
+8. Keep every text field short. Day focus: a label of at most ${PLAN_LIMITS.focus} characters, like "Push" or "Lower Body". Reps: at most ${PLAN_LIMITS.reps} characters, like "8-12", "AMRAP" or "30s" — put anything longer in the exercise notes. Exercise notes: at most ${PLAN_LIMITS.notes} characters. Title: at most ${PLAN_LIMITS.title} characters. Rationale: at most ${PLAN_LIMITS.rationale} characters (about 200 words). Weekly notes: at most ${PLAN_LIMITS.weeklyNotes} characters.
 
 You are writing the template for week 1 only. Later weeks are generated from it by applying progressive overload, so choose exercises that a member can sensibly repeat and add load to for several weeks.`;
 
@@ -118,12 +119,12 @@ export async function generateWeeklyTemplate(
     output_config: { format: zodOutputFormat(GeneratedPlanSchema) },
   });
 
-  const plan = response.parsed_output;
-  if (!plan) {
+  if (!response.parsed_output) {
     throw new PlannerError(
       "The model did not return a usable plan. Please try generating again."
     );
   }
+  const plan = normalisePlan(response.parsed_output);
 
   // Trust nothing: keep only exercises that exist in the candidate list. The
   // schema guarantees the SHAPE of exerciseJsonId, not that it is a real row.
@@ -155,6 +156,51 @@ export async function generateWeeklyTemplate(
       inputTokens: response.usage.input_tokens,
       outputTokens: response.usage.output_tokens,
     },
+  };
+}
+
+/* ──────────────────────────── normalisation ──────────────────────────── */
+
+/**
+ * Shortens text to `max` characters at a word boundary, with an ellipsis.
+ * Long prose is cut at the last full sentence instead when one ends in the
+ * back half, so a clipped rationale still reads as finished.
+ */
+export function clip(text: string, max: number): string {
+  const t = text.trim();
+  if (t.length <= max) return t;
+  const head = t.slice(0, max - 1);
+  const sentenceEnd = Math.max(head.lastIndexOf(". "), head.lastIndexOf(".\n"));
+  if (sentenceEnd >= max / 2) return head.slice(0, sentenceEnd + 1);
+  const space = head.lastIndexOf(" ");
+  const cut = space >= max / 2 ? head.slice(0, space) : head;
+  return `${cut.replace(/[\s,;:—-]+$/, "")}…`;
+}
+
+const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));
+
+/**
+ * Applies PLAN_LIMITS to what the model returned. The API cannot enforce
+ * lengths or ranges (see schemas.ts), so an overrun is repaired here rather
+ * than allowed to discard an otherwise good plan.
+ */
+function normalisePlan(plan: GeneratedPlan): GeneratedPlan {
+  return {
+    title: clip(plan.title, PLAN_LIMITS.title) || "Your training plan",
+    rationale: clip(plan.rationale, PLAN_LIMITS.rationale),
+    weeklyNotes: plan.weeklyNotes ? clip(plan.weeklyNotes, PLAN_LIMITS.weeklyNotes) : null,
+    days: plan.days.slice(0, PLAN_LIMITS.days).map((day, i) => ({
+      dayNumber: clamp(day.dayNumber, 1, PLAN_LIMITS.days) || i + 1,
+      focus: clip(day.focus, PLAN_LIMITS.focus) || (day.isRestDay ? "Rest" : `Day ${i + 1}`),
+      isRestDay: day.isRestDay,
+      exercises: day.exercises.map((ex) => ({
+        exerciseJsonId: ex.exerciseJsonId,
+        sets: clamp(ex.sets, PLAN_LIMITS.sets.min, PLAN_LIMITS.sets.max),
+        reps: clip(ex.reps, PLAN_LIMITS.reps) || "8-12",
+        restSeconds: clamp(ex.restSeconds, PLAN_LIMITS.restSeconds.min, PLAN_LIMITS.restSeconds.max),
+        notes: ex.notes ? clip(ex.notes, PLAN_LIMITS.notes) : null,
+      })),
+    })),
   };
 }
 

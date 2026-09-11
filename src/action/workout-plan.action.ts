@@ -133,7 +133,10 @@ export async function GenerateWorkoutPlan(
             title: plan.title,
             goal: member.fitnessGoal!,
             durationWeeks,
-            daysPerWeek: plan.days.length,
+            // Training days only. The model may add explicit rest days, and
+            // counting those made a 4-day plan read "7 days per week" and
+            // pushed adherence and retention targets to 7 workouts a week.
+            daysPerWeek: plan.days.filter((d) => !d.isRestDay).length || plan.days.length,
             generatedBy: "AI",
             aiRationale: [plan.rationale, plan.weeklyNotes].filter(Boolean).join("\n\n"),
             modelUsed,

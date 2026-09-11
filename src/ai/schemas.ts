@@ -19,6 +19,32 @@ import { z } from "zod/v4";
  *      re-guess it four times. The formula can go on a slide; a guess cannot.
  */
 
+/**
+ * NO length or range limits in these schemas, on purpose.
+ *
+ * Structured outputs cannot enforce maxLength, minimum/maximum or maxItems —
+ * the SDK strips them from the schema it sends and only mentions them in the
+ * field description, so the model treats them as hints. But the SDK still
+ * re-validates the reply against the full Zod schema, so a single focus label
+ * of 41 characters threw away an entire ~45-second, already-paid-for plan with
+ * "Could not generate a plan right now". That happened on production.
+ *
+ * The limits now live in PLAN_LIMITS: stated to the model in the prompt, and
+ * applied by normalisePlan() in workout-planner.ts, which clips and clamps an
+ * overrun instead of rejecting the plan.
+ */
+export const PLAN_LIMITS = {
+  title: 80,
+  rationale: 1500,
+  weeklyNotes: 1000,
+  focus: 40,
+  reps: 20,
+  notes: 200,
+  sets: { min: 1, max: 10 },
+  restSeconds: { min: 0, max: 600 },
+  days: 7,
+} as const;
+
 export const PlannedExerciseSchema = z.object({
   /**
    * Must be a json_id from the candidate list given in the prompt. Validated
@@ -26,32 +52,34 @@ export const PlannedExerciseSchema = z.object({
    * rather than trusted, so the plan can only ever contain real exercises.
    */
   exerciseJsonId: z.string(),
-  sets: z.number().int().min(1).max(10),
-  /** A range like "8-12", or "AMRAP" / "30s" for timed work. */
-  reps: z.string().min(1).max(20),
-  restSeconds: z.number().int().min(0).max(600),
-  notes: z.string().max(200).nullable(),
+  sets: z.number().int().describe("Working sets, 1 to 10."),
+  reps: z
+    .string()
+    .describe('A short prescription like "8-12", "AMRAP" or "30s". At most 20 characters.'),
+  restSeconds: z.number().int().describe("Rest between sets in seconds, 0 to 600."),
+  notes: z.string().nullable().describe("One short coaching cue, at most 200 characters."),
 });
 
 export const PlannedDaySchema = z.object({
   /** 1-based index within the training week, not a calendar weekday. */
-  dayNumber: z.number().int().min(1).max(7),
-  /** Short label: "Push", "Lower Body", "Active Recovery". */
-  focus: z.string().min(1).max(40),
+  dayNumber: z.number().int().describe("1-based index within the week, 1 to 7."),
+  focus: z
+    .string()
+    .describe('A short label like "Push", "Lower Body" or "Active Recovery". At most 40 characters.'),
   isRestDay: z.boolean(),
   exercises: z.array(PlannedExerciseSchema),
 });
 
 export const GeneratedPlanSchema = z.object({
-  title: z.string().min(1).max(80),
+  title: z.string().describe("Plan title, at most 80 characters."),
   /**
    * Why this structure suits this member. Surfaced in the UI and is the
    * evidence that the plan is reasoned rather than arbitrary.
    */
-  rationale: z.string().min(1).max(1500),
+  rationale: z.string().describe("Why this plan suits this member. At most 1500 characters."),
   /** Coaching notes: form cues, warm-up guidance, when to progress. */
-  weeklyNotes: z.string().max(1000).nullable(),
-  days: z.array(PlannedDaySchema).min(1).max(7),
+  weeklyNotes: z.string().nullable().describe("Coaching notes for the week. At most 1000 characters."),
+  days: z.array(PlannedDaySchema).min(1),
 });
 
 export type PlannedExercise = z.infer<typeof PlannedExerciseSchema>;
