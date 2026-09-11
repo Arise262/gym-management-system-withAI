@@ -4,7 +4,9 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { format } from "date-fns";
 import { AuthError } from "next-auth";
+import { after } from "next/server";
 import prisma from "@/lib/prisma";
+import { notify } from "@/lib/notifications";
 import { normalizePhMobile } from "@/lib/phone";
 import { toAppDate, gymToday } from "@/lib/format";
 import { signIn, signOut, BCRYPT_ROUNDS } from "@/lib/auth";
@@ -102,8 +104,9 @@ export async function RegisterMember(
   const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
   const memberCode = await generateUniqueMemberCode();
 
+  let userId: string;
   try {
-    await prisma.$transaction(async (tx) => {
+    userId = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: { email, passwordHash, role: "MEMBER" },
       });
@@ -119,12 +122,40 @@ export async function RegisterMember(
           DOJ: gymToday(),
         },
       });
+      return user.id;
     });
   } catch {
     return { success: false, error: "Could not create your account. Please try again." };
   }
 
+  // After the response, so a slow or failing Brevo call can never delay or
+  // fail a registration that has already succeeded. notify() never throws,
+  // and the dedupeKey makes a retried send impossible to double up.
+  after(() => sendWelcome(userId, name));
+
   return { success: true };
+}
+
+/**
+ * Welcome email + in-app notification for a new self-registered member.
+ * Filed as MOTIVATIONAL rather than a new WELCOME type, which would need a
+ * migration against the live database for no behavioural difference.
+ */
+async function sendWelcome(userId: string, name: string) {
+  const firstName = name.split(" ")[0];
+  await notify({
+    userId,
+    type: "MOTIVATIONAL",
+    channel: "BOTH",
+    title: `Welcome to CBG Fitness Center, ${firstName}!`,
+    body: [
+      `Hi ${firstName}, your account is ready and you can sign in any time with this email address.`,
+      "A good first step is your fitness profile: tell us your goal and experience, and the AI planner will build a workout plan around you.",
+      "To start your membership, drop by the front desk. Once it is set up you can also pay online from the Payments page. See you at the gym!",
+    ].join("\n\n"),
+    actionUrl: "/member",
+    dedupeKey: `welcome:${userId}`,
+  });
 }
 
 /* -------------------------------------------------------- password change */
