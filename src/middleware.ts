@@ -6,7 +6,7 @@ import { authConfig } from "@/lib/auth.config";
 const { auth } = NextAuth(authConfig);
 
 /** Reachable without a session. Everything else is denied by default. */
-const PUBLIC_PREFIXES = ["/login", "/register", "/invoices", "/offline"];
+const PUBLIC_PREFIXES = ["/login", "/register", "/invoices", "/offline", "/account-disabled"];
 
 /** Where each role lands after login, and where it gets sent when it strays. */
 const HOME_BY_ROLE = {
@@ -26,6 +26,9 @@ export default auth((req) => {
   // Signed-in users have no business on /login or /register.
   if (isPublic && user) {
     if (pathname.startsWith("/invoices")) return NextResponse.next();
+    // A deactivated trainer still holds a session; bouncing them "home" from
+    // here would loop, because home is what just refused them.
+    if (pathname === "/account-disabled") return NextResponse.next();
     return NextResponse.redirect(new URL(HOME_BY_ROLE[user.role], req.nextUrl));
   }
 

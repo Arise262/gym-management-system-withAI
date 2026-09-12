@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import type { Role } from "@prisma/client";
 import { auth } from "@/lib/auth";
+import prisma from "@/lib/prisma";
 
 export type SessionUser = {
   id: string;
@@ -42,6 +43,14 @@ export async function requireRole(...roles: Role[]): Promise<SessionUser> {
   // ADMIN is a superset of every other role.
   if (user.role !== "ADMIN" && !roles.includes(user.role)) {
     redirect("/login");
+  }
+  // isActive is otherwise only checked at sign-in, and a session lasts 7
+  // days — so a trainer deactivated by the admin would keep working until it
+  // expired. Trainers are the accounts the admin deactivates, so they pay one
+  // indexed lookup per request; members and admins are not affected.
+  if (user.role === "TRAINER") {
+    const account = await prisma.user.findUnique({ where: { id: user.id }, select: { isActive: true } });
+    if (!account?.isActive) redirect("/account-disabled");
   }
   return user;
 }

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { IconMessage, IconUsers } from "@tabler/icons-react";
+import { IconKey, IconMessage, IconUsers } from "@tabler/icons-react";
 import { format } from "date-fns";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -151,7 +151,14 @@ export default async function Page() {
           mailConfigured={hasMailKey()}
         />
 
-        <div className="pt-2">
+        <div className="flex flex-wrap items-center gap-2 pt-2">
+          {/* New trainers sign in with an emailed temporary password. */}
+          <Button asChild variant="ghost" className="text-muted-foreground w-fit">
+            <Link href="/trainer/change-password">
+              <IconKey className="mr-2" />
+              Change password
+            </Link>
+          </Button>
           <LogoutButton className="text-muted-foreground hover:text-destructive w-fit" />
         </div>
       </div>

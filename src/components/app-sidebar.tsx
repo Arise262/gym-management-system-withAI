@@ -3,7 +3,9 @@
 import Image from "next/image";
 import * as React from "react";
 import {
+  IconBarbell,
   IconBell,
+  IconCash,
   IconCake,
   IconChartBar,
   IconCreditCard,
@@ -19,6 +21,7 @@ import {
   IconToiletPaper,
   IconUser,
   IconUserCancel,
+  IconUserPlus,
   IconUsers,
 } from "@tabler/icons-react";
 
@@ -53,6 +56,16 @@ const data = {
       title: "Sales",
       url: "/sales",
       icon: IconChartBar,
+    },
+    {
+      title: "Collections",
+      url: "/sales/collections",
+      icon: IconCash,
+    },
+    {
+      title: "Trainers",
+      url: "/trainers",
+      icon: IconBarbell,
     },
     {
       title: "Retention",
@@ -117,6 +130,11 @@ const data = {
       name: "New Sale",
       url: "/sales/new",
       icon: IconFileAi,
+    },
+    {
+      name: "New Trainer",
+      url: "/trainers/new",
+      icon: IconUserPlus,
     },
   ],
   followups: [
