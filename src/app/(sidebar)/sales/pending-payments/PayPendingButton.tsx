@@ -1,5 +1,6 @@
 'use client'
-import { UpdateSaleById } from "@/action/sales.action"
+import { RecordCashPayment } from "@/action/payment.action"
+import { Field } from "@/components/form-field"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -11,7 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { pesos } from "@/lib/format"
 import React from "react"
 import { toast } from "sonner"
 
@@ -20,56 +21,66 @@ interface Props {
     sale: any,
     onSuccess?: () => void
 }
+
+/**
+ * Cash taken at the desk against a membership balance. Online payments go
+ * through the member's own Pay button; this is the counter.
+ */
 export function PayPendingDialog({
     sale_id,
     sale,
     onSuccess
 }: Props) {
-    const [amount, setAmount] = React.useState(0)
-    const [open, setOpen] = React.useState(false) // Add state for dialog control
-    
+    // A string, not parseInt on every keystroke — clearing the field used to
+    // store NaN and send it to the server.
+    const [amount, setAmount] = React.useState(String(sale.due))
+    const [error, setError] = React.useState<string>()
+    const [saving, setSaving] = React.useState(false)
+    const [open, setOpen] = React.useState(false)
+
     const handleSubmit = async () => {
-        if(amount > sale.due) {
-            toast.error('Amount cannot be greater than due')
-            return
-        }
-        const res = await UpdateSaleById(sale_id, {paid: amount + sale.paid})
-        if(res.id) {
-            toast.success('Paid successfully')
-            setAmount(0)
-            setOpen(false) // Close the dialog on success
-            onSuccess && onSuccess()
-            return
-        }
-        toast.error('Failed to pay')
+        const value = Number(amount)
+        if (!Number.isInteger(value) || value <= 0) return setError('Enter an amount in whole pesos.')
+        if (value > sale.due) return setError(`Only ${pesos(sale.due)} is due.`)
+        setError(undefined)
+        setSaving(true)
+        const res = await RecordCashPayment(sale_id, value)
+        setSaving(false)
+        if (!res.success) return setError(res.error)
+        toast.success(`${pesos(value)} cash recorded`)
+        setOpen(false)
+        onSuccess && onSuccess()
     }
-    
+
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (o) { setAmount(String(sale.due)); setError(undefined) } }}>
             <DialogTrigger asChild>
                 <Button variant="outline">Pay</Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle>Pay remaining due</DialogTitle>
-                    <p className="">Payment for {sale.service_name} of ₱{sale.due} by {sale.member_name}</p>
+                    <DialogTitle>Take a cash payment</DialogTitle>
+                    <DialogDescription>
+                        {sale.member_name} owes {pesos(sale.due)} on {sale.service_name}. It will show in today&apos;s collections.
+                    </DialogDescription>
                 </DialogHeader>
-                <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="name" className="text-right">
-                            Amount
-                        </Label>
-                        <Input 
-                            id="name" 
-                            type='number' 
-                            className="col-span-3" 
+                <Field label="Cash received" error={error} hint="Whole pesos. Less than the balance is fine — the rest stays pending.">
+                    {(p) => (
+                        <Input
+                            {...p}
+                            type="number"
+                            inputMode="numeric"
+                            min={1}
+                            max={sale.due}
+                            step={1}
                             value={amount}
-                            onChange={(e) => setAmount(parseInt(e.target.value))} 
+                            onChange={(e) => setAmount(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                         />
-                    </div>
-                </div>
+                    )}
+                </Field>
                 <DialogFooter>
-                    <Button onClick={handleSubmit}>Save changes</Button>
+                    <Button onClick={handleSubmit} disabled={saving}>{saving ? 'Saving…' : 'Record payment'}</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

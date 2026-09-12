@@ -229,7 +229,7 @@ const NewSalePage = () => {
                     label="Amount paid"
                     required
                     error={errors.paid}
-                    hint="What the member is handing over now. Enter 0 if they are paying later."
+                    hint="Cash the member is handing over now — it goes into today's collections. Enter 0 if they are paying later."
                 >
                     {(p) => (
                         <Input

@@ -9,6 +9,7 @@ import { IconTrash } from '@tabler/icons-react'
 import Link from 'next/link'
 import React, { useEffect } from 'react'
 import { toast } from 'sonner'
+import { formatDuration } from '@/lib/duration'
 
 type Props = {}
 const columns = [
@@ -25,7 +26,8 @@ const columns = [
     header: 'Price',
   },
   {
-    accessorKey: 'duration',
+    // "7" alone could be months or days now that both exist.
+    accessorKey: 'durationLabel',
     header: 'Duration',
   }
 ]
@@ -46,7 +48,7 @@ const MemberPage = (props: Props) => {
   useEffect(() => {
     async function fetchData() {
       const data = await GetAllServices()
-      setServiceList(data)
+      setServiceList(data.map((s) => ({ ...s, durationLabel: formatDuration(s.duration, s.durationUnit) })))
       hideLoading()
     }
     showLoading()

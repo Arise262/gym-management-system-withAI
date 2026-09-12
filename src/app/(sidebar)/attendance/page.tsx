@@ -1,123 +1,136 @@
 "use client";
 import { AddAttendance, GetAttendanceByDate } from "@/action/attendance.action";
 import { GetAllMembers } from "@/action/member.action";
+import { GetActiveWalkInPasses, GetWalkInsByDate, type ActivePass, type WalkInRow } from "@/action/walk-in.action";
 import ItemSelector from "@/components/custom/item-selector";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { useLoading } from "@/hooks/use-loading";
-import { IconClock } from "@tabler/icons-react";
-import { format, set } from "date-fns";
-import { Clock } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { IconCash, IconClock } from "@tabler/icons-react";
+import { format } from "date-fns";
 import Link from "next/link";
 import React, { useEffect } from "react";
 import { toast } from "sonner";
 import { gymToday } from "@/lib/format";
+import { AttendanceList, type MemberCheckIn } from "./_components/AttendanceList";
+import { WalkInForm } from "./_components/WalkInForm";
 
-type Props = {};
-
-const page = (props: Props) => {
-  const { showLoading, hideLoading } = useLoading();
+const page = () => {
   const [memberList, setMemberList] = React.useState<any[]>([]);
-  const [isLoading, setIsLoading] = React.useState<boolean>(false);
   const [selectedMember, setSelectedMember] = React.useState<string>();
-  const [attendanceList, setAttendanceList] = React.useState<any[]>([]);
-  const [refresh, setRefresh] = React.useState<boolean>(false);
+  const [checkIns, setCheckIns] = React.useState<MemberCheckIn[]>([]);
+  const [walkIns, setWalkIns] = React.useState<WalkInRow[]>([]);
+  const [passes, setPasses] = React.useState<ActivePass[]>([]);
+  const [checkingIn, setCheckingIn] = React.useState(false);
+
   useEffect(() => {
-    async function fetchData() {
-      const data = await GetAllMembers();
-      setMemberList(data);
-    }
-    fetchData();
-    fetchTodaysAttendance();
+    GetAllMembers().then(setMemberList);
+    refresh();
   }, []);
-  useEffect(() => {
-    async function fetchData() {
-      await fetchTodaysAttendance();
-    }
-    fetchData();
-  }, [refresh]);
-  async function fetchTodaysAttendance() {
-    const data = await GetAttendanceByDate(gymToday());
-    console.log(data);
-    setAttendanceList(data);
+
+  async function refresh() {
+    const day = gymToday();
+    // Sequential, not Promise.all: the pooler runs one connection, so these
+    // would queue anyway.
+    setCheckIns(await GetAttendanceByDate(day));
+    setWalkIns(await GetWalkInsByDate(day));
+    setPasses(await GetActiveWalkInPasses());
   }
+
+  const refreshPasses = async () => setPasses(await GetActiveWalkInPasses());
+
+  // A pass holder checked in twice gets the visit already on file back, so
+  // replace by id rather than always prepending.
+  function upsertWalkIn(w: WalkInRow) {
+    setWalkIns((list) => (list.some((x) => x.id === w.id) ? list.map((x) => (x.id === w.id ? w : x)) : [w, ...list]));
+    // Selling a pass or using one changes the pass-holder list.
+    if (w.rate === "WEEKLY") refreshPasses();
+  }
+
+  // The old handler refreshed the list BEFORE the check-in was written, so the
+  // new name only appeared on the next visit, and it returned early with the
+  // loading overlay still up when no member was selected.
   const handleCheckIn = async () => {
-    showLoading();
-    setRefresh(!refresh);
     if (!selectedMember) return;
-    const newAttendance = {
-      member_id: selectedMember,
-      date: gymToday(),
-      time: format(new Date(), "HH:mm:ss"),
-    };
-    const data = await AddAttendance(newAttendance);
-    if (data.id) {
-      toast.success("Attendance added successfully");
+    setCheckingIn(true);
+    try {
+      const already = checkIns.some((a) => a.member.id === selectedMember);
+      await AddAttendance({ member_id: selectedMember, date: gymToday(), time: format(new Date(), "HH:mm:ss") });
+      toast.success(already ? "Already checked in today" : "Checked in");
+      await refresh();
+    } catch {
+      toast.error("Could not check that member in.");
+    } finally {
+      setCheckingIn(false);
     }
-    hideLoading();
   };
 
-  function convertToAmPm(timeStr: string) {
-    const [hour, minute, sec] = timeStr.split(":");
-    let h = parseInt(hour);
-    const ampm = h >= 12 ? "pm" : "am";
-    h = h % 12 || 12; // convert 0 to 12
-    return `${h.toString().padStart(2, "0")}:${minute} ${ampm}`;
-  }
   return (
-    <div className="max-w-xl w-full mx-auto space-y-6 p-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Attendance</h1>
-        <Link href="/attendance/history">
-          <Button className="gap-2" variant="outline">
-            <IconClock size={16} /> History
+    <div className="mx-auto w-full max-w-2xl space-y-6 p-4">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="font-display text-3xl font-semibold">Attendance</h1>
+          <p className="text-muted-foreground text-sm">Check in a member, or a walk-in paying per session.</p>
+        </div>
+        <div className="flex gap-2">
+          <Button className="gap-2" variant="outline" asChild>
+            <Link href="/sales/collections">
+              <IconCash size={16} /> Collections
+            </Link>
           </Button>
-        </Link>
+          <Button className="gap-2" variant="outline" asChild>
+            <Link href="/attendance/history">
+              <IconClock size={16} /> History
+            </Link>
+          </Button>
+        </div>
       </div>
-      <Separator />
-      <div className="flex items-center justify-between gap-4">
-        <ItemSelector
-          data={memberList}
-          valueKey="id"
-          labelKey="name"
-          onSelect={(id) => setSelectedMember(id)}
-          placeholder="Select Member"
-          searchPlaceholder="Search Member"
-        />
-        <Button onClick={handleCheckIn} disabled={!selectedMember}>
-          Check In
-        </Button>
-      </div>
-      <Separator />
+
+      <Card>
+        <CardContent>
+          <Tabs defaultValue="member">
+            <TabsList className="mb-4">
+              <TabsTrigger value="member">Member</TabsTrigger>
+              <TabsTrigger value="walkin">Walk-in</TabsTrigger>
+            </TabsList>
+            <TabsContent value="member">
+              <div className="flex flex-wrap items-center gap-3">
+                <ItemSelector
+                  data={memberList}
+                  valueKey="id"
+                  labelKey="name"
+                  onSelect={(id) => setSelectedMember(id)}
+                  placeholder="Select member"
+                  searchPlaceholder="Search member"
+                />
+                <Button onClick={handleCheckIn} disabled={!selectedMember || checkingIn}>
+                  {checkingIn ? "Checking in…" : "Check in"}
+                </Button>
+              </div>
+            </TabsContent>
+            <TabsContent value="walkin">
+              <WalkInForm passes={passes} onAdded={upsertWalkIn} />
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
-          <CardTitle>
-            <h2 className="text-xl font-semibold">Today's Attendance</h2>
-          </CardTitle>
+          <CardTitle>Today&apos;s attendance</CardTitle>
+          <CardDescription>Newest first. Mark a walk-in paid when they hand over the cash.</CardDescription>
         </CardHeader>
-          <CardContent >
-            <div className="">
-              {attendanceList.length === 0 ? (
-                <p className="text-muted-foreground flex items-center justify-center border-dashed border-2 border-muted rounded-md p-2 py-8">
-                  No attendance records found
-                </p>
-              ) : (
-                attendanceList.map((attendance, index) => (
-                  <div
-                    key={attendance.id}
-                    className="flex gap-4 hover:bg-muted rounded-md p-2"
-                  >
-                    <p>{index + 1}</p>
-                    <p>{attendance.member.name}</p>
-                    <p className="ml-auto">
-                      {attendance.time && convertToAmPm(attendance.time)}
-                    </p>
-                  </div>
-                ))
-              )}
-            </div>
-          </CardContent>
+        <CardContent>
+          <AttendanceList
+            checkIns={checkIns}
+            walkIns={walkIns}
+            onWalkInChange={upsertWalkIn}
+            onWalkInRemoved={(id) => {
+              setWalkIns((list) => list.filter((x) => x.id !== id));
+              refreshPasses();
+            }}
+          />
+        </CardContent>
       </Card>
     </div>
   );

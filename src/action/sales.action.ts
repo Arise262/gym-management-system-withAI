@@ -15,6 +15,8 @@ import {
 } from "date-fns";
 import { MemberResponse } from "./member.action";
 import { gymToday } from "@/lib/format";
+import { pesosToCentavos } from "@/lib/paymongo";
+import { coverageEnd } from "@/lib/duration";
 
 // Type definitions
 export interface SalesInput {
@@ -117,9 +119,10 @@ export async function AddSales(data: SalesInput): Promise<SalesResponse> {
       throw new Error("Member not found");
     }
 
-    // Calculate endDate based on service duration (in months)
+    // endDate from the service's length — months for memberships, days for
+    // short plans like the 7-day session.
     const startDate = parse(data.startDate, "dd-MM-yyyy", new Date());
-    const endDate = addMonths(startDate, service.duration);
+    const endDate = coverageEnd(startDate, service.duration, service.durationUnit);
     const formattedEndDate = format(endDate, "dd-MM-yyyy");
 
     const sale = await prisma.sales.create({
@@ -132,6 +135,22 @@ export async function AddSales(data: SalesInput): Promise<SalesResponse> {
         paid: data.paid,
         startDate: data.startDate,
         endDate: formattedEndDate,
+        // Money paid up front is taken at the desk, so it is recorded as a
+        // cash Payment — the same row RecordCashPayment writes — or the day's
+        // cash total would miss every sale paid in full on the spot.
+        payments:
+          data.paid > 0
+            ? {
+                create: {
+                  memberId: data.member_id,
+                  amount: pesosToCentavos(data.paid),
+                  provider: "cash",
+                  method: "cash",
+                  status: "PAID",
+                  paidAt: new Date(),
+                },
+              }
+            : undefined,
       },
     });
 
@@ -291,7 +310,7 @@ export async function UpdateSaleById(
         throw new Error("Sale not found");
       }
       const startDate = parse(data.startDate, "dd-MM-yyyy", new Date());
-      const newEndDate = addMonths(startDate, sale.service.duration);
+      const newEndDate = coverageEnd(startDate, sale.service.duration, sale.service.durationUnit);
       endDate = format(newEndDate, "dd-MM-yyyy");
     }
 

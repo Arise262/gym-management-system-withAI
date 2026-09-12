@@ -95,9 +95,14 @@ https://gym-prisma.vercel.app/invoices/${row.id}
     <div className='max-w-xl w-full mx-auto space-y-6 p-4'>
       <div className='flex items-center justify-between'>
         <h1 className='text-xl font-semibold'>Sales</h1>
-        <Link href={'/sales/new'}>
-          <Button>Create Sales</Button>
-        </Link>
+        <div className='flex gap-2'>
+          <Link href={'/sales/collections'}>
+            <Button variant='outline'>Daily collections</Button>
+          </Link>
+          <Link href={'/sales/new'}>
+            <Button>Create Sales</Button>
+          </Link>
+        </div>
       </div>
       <Separator />
       <DataTable dataRows={salesList} actionColumns={DeleteColumn} columns={columns} isLoading={isLoading} />

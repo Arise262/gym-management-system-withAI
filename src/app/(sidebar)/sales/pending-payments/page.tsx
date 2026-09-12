@@ -15,8 +15,8 @@ export default function Page() {
             <div>
                 <h1 className="font-display text-3xl font-semibold">Pending payments</h1>
                 <p className="text-muted-foreground text-sm">
-                    Memberships with an outstanding balance. Message a member to chase it, or take
-                    the payment online.
+                    Memberships with an outstanding balance. Message a member to chase it, or press
+                    Pay to record cash taken at the desk.
                 </p>
             </div>
             <Separator />

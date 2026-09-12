@@ -92,11 +92,12 @@ export async function GetMyPayments() {
   });
 }
 
-/** Every payment, for the back office. */
+/** Every online payment, for the back office. Desk cash is on /sales/collections. */
 export async function GetAllPayments(limit = 100) {
   await requireRole("ADMIN");
 
   return prisma.payment.findMany({
+    where: { provider: "paymongo" },
     orderBy: { createdAt: "desc" },
     take: limit,
     select: {
@@ -106,6 +107,68 @@ export async function GetAllPayments(limit = 100) {
       sale: { select: { service: { select: { name: true } } } },
     },
   });
+}
+
+/* ─────────────────────────── cash at the desk ─────────────────────────── */
+
+export type CashPaymentResult = { success: true } | { success: false; error: string };
+
+/**
+ * Takes cash at the front desk against a membership balance.
+ *
+ * This used to be a bare `UpdateSaleById({ paid: old + amount })`: the sale's
+ * running total moved, but nothing recorded that money changed hands, when,
+ * or how — so a day's cash could never be counted back. Now the same step
+ * writes a PAID Payment row (provider "cash") in the same transaction, which
+ * puts desk payments in the member's history beside their online ones.
+ *
+ * The due check is here, not only in the dialog, so a stale screen or a
+ * second tab cannot push a sale into overpayment.
+ */
+export async function RecordCashPayment(saleId: string, amountPesos: number): Promise<CashPaymentResult> {
+  await requireRole("ADMIN");
+
+  if (!Number.isInteger(amountPesos) || amountPesos <= 0) {
+    return { success: false, error: "Enter an amount in whole pesos." };
+  }
+
+  try {
+    return await prisma.$transaction(
+      async (tx) => {
+        const sale = await tx.sales.findUnique({
+          where: { id: saleId },
+          select: { member_id: true, amount: true, discount: true, paid: true },
+        });
+        if (!sale) return { success: false, error: "That sale no longer exists." } as const;
+
+        const due = Math.max(0, sale.amount - sale.discount - sale.paid);
+        if (amountPesos > due) {
+          return { success: false, error: `Only ₱${due.toLocaleString("en-PH")} is due on this sale.` } as const;
+        }
+
+        await tx.sales.update({ where: { id: saleId }, data: { paid: { increment: amountPesos } } });
+        await tx.payment.create({
+          data: {
+            memberId: sale.member_id,
+            saleId,
+            amount: pesosToCentavos(amountPesos),
+            provider: "cash",
+            method: "cash",
+            status: "PAID",
+            paidAt: new Date(),
+          },
+        });
+        return { success: true } as const;
+      },
+      // Three round trips to the Sydney pooler can pass Prisma's 5 s default.
+      { timeout: 30_000, maxWait: 10_000 }
+    );
+  } catch (e) {
+    console.error("RecordCashPayment failed:", e);
+    return { success: false, error: "Could not record the payment. Please try again." };
+  } finally {
+    revalidatePath("/sales/collections");
+  }
 }
 
 /* ────────────────────────────── checkout ────────────────────────────── */

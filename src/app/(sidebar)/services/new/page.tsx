@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Field, FormErrorSummary } from "@/components/form-field";
 import { AddService, ServiceInput } from "@/action/service.action";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { DurationUnit } from "@prisma/client";
 
 const EMPTY: ServiceInput = { name: "", description: "", price: 0, duration: 0 };
 
@@ -19,9 +21,9 @@ type Errors = Partial<Record<keyof ServiceInput, string>>;
  * type="number"> hands back a string, and the old code pushed that straight
  * into a `number` field, so the action received "1200" rather than 1200.
  */
-type Draft = { name: string; description: string; price: string; duration: string };
+type Draft = { name: string; description: string; price: string; duration: string; durationUnit: DurationUnit };
 
-const EMPTY_DRAFT: Draft = { name: "", description: "", price: "", duration: "" };
+const EMPTY_DRAFT: Draft = { name: "", description: "", price: "", duration: "", durationUnit: "MONTH" };
 
 function validate(d: Draft): Errors {
   const errors: Errors = {};
@@ -34,7 +36,7 @@ function validate(d: Draft): Errors {
   const duration = Number(d.duration);
   if (!d.duration.trim()) errors.duration = "Enter a duration.";
   else if (!Number.isInteger(duration) || duration <= 0)
-    errors.duration = "Duration must be a whole number of months, at least 1.";
+    errors.duration = `Duration must be a whole number of ${d.durationUnit === "DAY" ? "days" : "months"}, at least 1.`;
 
   return errors;
 }
@@ -67,6 +69,7 @@ const NewServicePage = () => {
         description: draft.description.trim(),
         price: Number(draft.price),
         duration: Number(draft.duration),
+        durationUnit: draft.durationUnit,
       });
       if (response?.id) {
         toast.success(`${draft.name.trim()} added.`);
@@ -147,18 +150,38 @@ const NewServicePage = () => {
         )}
       </Field>
 
-      <Field label="Duration" required error={errors.duration} hint="In months.">
+      <Field
+        label="Duration"
+        required
+        error={errors.duration}
+        hint={
+          draft.durationUnit === "DAY"
+            ? "Counting the start day — 7 days bought on a Saturday covers through Friday."
+            : "Monthly memberships, e.g. 1 for a month or 12 for a year."
+        }
+      >
         {(p) => (
-          <Input
-            {...p}
-            type="number"
-            inputMode="numeric"
-            min={1}
-            step={1}
-            placeholder="12"
-            value={draft.duration}
-            onChange={(e) => set(e.target.value, "duration")}
-          />
+          <div className="flex gap-2">
+            <Input
+              {...p}
+              type="number"
+              inputMode="numeric"
+              min={1}
+              step={1}
+              placeholder={draft.durationUnit === "DAY" ? "7" : "1"}
+              value={draft.duration}
+              onChange={(e) => set(e.target.value, "duration")}
+            />
+            <Select value={draft.durationUnit} onValueChange={(v) => set(v, "durationUnit")}>
+              <SelectTrigger className="w-32" aria-label="Duration unit">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="MONTH">Months</SelectItem>
+                <SelectItem value="DAY">Days</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         )}
       </Field>
 

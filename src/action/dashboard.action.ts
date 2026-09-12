@@ -18,6 +18,10 @@ import { completedWeeks, isoWeekStart, weekKeyDate } from "@/analytics/engagemen
  *   collected = paid                     (whole pesos; the webhook adds to it)
  *   due       = amount - discount - paid
  *
+ * Walk-ins (non-members paying per session) count as revenue on the day of the
+ * visit: billed = amount, collected = amount once paidAt is set. They are not
+ * in "outstanding", which is membership balances only.
+ *
  * Dates: Attendance.date, Sales.startDate/endDate, WorkoutSession.date are all
  * "dd-MM-yyyy" strings, so nothing here filters by date in SQL. Each table is
  * read once and bucketed in TypeScript — one round trip per table, which is
@@ -42,6 +46,8 @@ export type AdminDashboard = {
     thisMonthCollected: number;
     outstanding: number;
     onlinePaidThisMonth: number; // pesos, from PayMongo payments
+    walkInsThisMonth: number;
+    walkInCashThisMonth: number;
   };
   attendance: {
     days: Array<{ label: string; value: number; date: string }>;
@@ -49,6 +55,7 @@ export type AdminDashboard = {
     uniqueMembers7: number;
     uniqueMembers30: number;
     avgPerDay30: number;
+    walkIns7: number;
   };
   retention: { byLevel: Record<RiskLevel, number>; lastRun: string | null; total: number };
   engagement: {
@@ -145,9 +152,32 @@ export async function GetAdminDashboard(): Promise<AdminDashboard> {
     }
   }
 
+  // Walk-in fees land in the month of the visit, beside the memberships.
+  const walkIns = await prisma.walkIn.findMany({ select: { date: true, amount: true, paidAt: true } });
+  let walkInsThisMonth = 0;
+  let walkInCashThisMonth = 0;
+  for (const w of walkIns) {
+    const d = parseGymDate(w.date);
+    if (!d) continue;
+    const key = format(d, "yyyy-MM");
+    const idx = monthIndex.get(key);
+    if (idx === undefined) continue;
+    const collected = w.paidAt ? w.amount : 0;
+    months[idx].a += w.amount;
+    months[idx].b += collected;
+    if (key === thisKey) {
+      thisMonthBilled += w.amount;
+      thisMonthCollected += collected;
+      walkInsThisMonth += 1;
+      walkInCashThisMonth += collected;
+    }
+  }
+
+  // provider "paymongo" only — desk cash is also a PAID Payment row now, and
+  // counting it here would label cash as online.
   const onlinePaid = await prisma.payment.aggregate({
     _sum: { amount: true },
-    where: { status: "PAID", paidAt: { gte: monthStart } },
+    where: { status: "PAID", provider: "paymongo", paidAt: { gte: monthStart } },
   });
   const onlinePaidThisMonth = Math.round((onlinePaid._sum.amount ?? 0) / 100);
 
@@ -165,6 +195,11 @@ export async function GetAdminDashboard(): Promise<AdminDashboard> {
   const uniq30 = new Set<string>();
   let checkins7 = 0;
   let checkins30 = 0;
+  let walkIns7 = 0;
+  for (const w of walkIns) {
+    const idx = dayIndex.get(w.date);
+    if (idx !== undefined && idx >= days.length - 7) walkIns7 += 1;
+  }
   for (const a of attendance) {
     const idx = dayIndex.get(a.date);
     if (idx === undefined) continue;
@@ -237,13 +272,14 @@ export async function GetAdminDashboard(): Promise<AdminDashboard> {
   return {
     asOf: now.toISOString(),
     members: { total: members.length, active: activeMembers.size, newThisMonth, expiring7 },
-    revenue: { months, thisMonthBilled, thisMonthCollected, outstanding, onlinePaidThisMonth },
+    revenue: { months, thisMonthBilled, thisMonthCollected, outstanding, onlinePaidThisMonth, walkInsThisMonth, walkInCashThisMonth },
     attendance: {
       days,
       checkins7,
       uniqueMembers7: uniq7.size,
       uniqueMembers30: uniq30.size,
       avgPerDay30: Math.round((checkins30 / 30) * 10) / 10,
+      walkIns7,
     },
     retention: { byLevel, lastRun: latestScore ? latestScore.scoreDate.toISOString() : null, total: Object.values(byLevel).reduce((a, b) => a + b, 0) },
     engagement: {

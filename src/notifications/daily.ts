@@ -91,6 +91,7 @@ export async function sendRenewalReminders(today: Date): Promise<DailyRunReport[
     select: {
       id: true,
       member_id: true,
+      startDate: true,
       endDate: true,
       amount: true,
       paid: true,
@@ -118,6 +119,15 @@ export async function sendRenewalReminders(today: Date): Promise<DailyRunReport[
     if ((latestEnd.get(sale.member_id) ?? 0) > thisEnd) continue; // renewed already
 
     const daysLeft = targets.get(sale.endDate)!;
+
+    // Short plans skip the long leads: a 7-day session would otherwise be
+    // told "ends in 3 days" halfway through the week it was just bought for.
+    // A lead is sent only if it is under half the plan's length, so a weekly
+    // member hears "tomorrow" and "today", and a monthly member all four.
+    const start = parseGymDate(sale.startDate);
+    const lengthDays = start ? differenceInCalendarDays(new Date(thisEnd), start) : Infinity;
+    if (daysLeft > 0 && daysLeft * 2 >= lengthDays) continue;
+
     const copy = RENEWAL_COPY[daysLeft];
     const balance = Math.max(0, sale.amount - sale.paid);
     const endPretty = format(parseGymDate(sale.endDate)!, "d MMMM yyyy");

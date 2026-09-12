@@ -31,7 +31,11 @@ export default async function DashboardPage() {
         <StatTile
           label="Billed this month"
           value={pesos(d.revenue.thisMonthBilled)}
-          hint={collectedPct === null ? "No sales started this month" : `${pesos(d.revenue.thisMonthCollected)} collected (${collectedPct}%)`}
+          hint={
+            collectedPct === null
+              ? "No sales or walk-ins this month"
+              : `${pesos(d.revenue.thisMonthCollected)} collected (${collectedPct}%)${d.revenue.walkInsThisMonth > 0 ? ` · ${d.revenue.walkInsThisMonth} walk-ins` : ""}`
+          }
         />
         <StatTile
           label="Outstanding balance"
@@ -42,7 +46,7 @@ export default async function DashboardPage() {
         <StatTile
           label="Check-ins, last 7 days"
           value={d.attendance.checkins7}
-          hint={`${d.attendance.uniqueMembers7} different members · ${d.attendance.avgPerDay30}/day over 30 days`}
+          hint={`${d.attendance.uniqueMembers7} different members${d.attendance.walkIns7 > 0 ? ` + ${d.attendance.walkIns7} walk-ins` : ""} · ${d.attendance.avgPerDay30}/day over 30 days`}
         />
         <StatTile
           label="Members at risk"
@@ -74,7 +78,12 @@ export default async function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Revenue</CardTitle>
-            <CardDescription>Billed against collected, by the month a membership starts. Whole pesos.</CardDescription>
+            <CardDescription>
+              Billed against collected — memberships by the month they start, walk-ins by the day of the visit. Whole pesos.{" "}
+              <Link href="/sales/collections" className="underline underline-offset-2">
+                Daily collections
+              </Link>
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <GroupedColumns data={d.revenue.months} labels={{ a: "Billed", b: "Collected" }} currency />

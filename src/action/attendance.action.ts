@@ -93,8 +93,17 @@ export async function GetTodaysAttendance(): Promise<AttendanceResponse[]> {
   }
 }
 
+/**
+ * Whether a member's membership covered a given day, so the desk can see at
+ * check-in that someone is paid up — the member equivalent of a walk-in's
+ * Paid badge. Weekly and monthly plans are both just Sales with a date range.
+ */
+export type Coverage = { until: string; due: number } | null;
+
 // 3. GetAttendanceByDate
-export async function GetAttendanceByDate(date: string): Promise<AttendanceResponse[]> {
+export async function GetAttendanceByDate(
+  date: string
+): Promise<Array<AttendanceResponse & { member: { id: string; name: string }; coverage: Coverage }>> {
   await requireRole("TRAINER");
   try {
     if (!validateDateFormat(date)) {
@@ -116,7 +125,27 @@ export async function GetAttendanceByDate(date: string): Promise<AttendanceRespo
       }
     });
 
-    return attendances;
+    // One read for every checked-in member's sales; dates are dd-MM-yyyy
+    // strings, so which sale covers the day is decided here, not in SQL.
+    const day = parse(date, 'dd-MM-yyyy', new Date()).getTime();
+    const sales = await prisma.sales.findMany({
+      where: { member_id: { in: [...new Set(attendances.map((a) => a.member_id))] } },
+      select: { member_id: true, startDate: true, endDate: true, amount: true, discount: true, paid: true },
+    });
+    const coverage = new Map<string, NonNullable<Coverage>>();
+    for (const s of sales) {
+      const start = parse(s.startDate, 'dd-MM-yyyy', new Date()).getTime();
+      const end = parse(s.endDate, 'dd-MM-yyyy', new Date()).getTime();
+      if (!(start <= day && day <= end)) continue;
+      const due = Math.max(0, s.amount - s.discount - s.paid);
+      const prev = coverage.get(s.member_id);
+      // Overlapping sales (a renewal bought early): report the later end and
+      // everything still owed across them.
+      const later = !prev || end > parse(prev.until, 'dd-MM-yyyy', new Date()).getTime();
+      coverage.set(s.member_id, { until: later ? s.endDate : prev!.until, due: (prev?.due ?? 0) + due });
+    }
+
+    return attendances.map((a) => ({ ...a, coverage: coverage.get(a.member_id) ?? null }));
   } catch (error:any) {
     throw new Error(`Failed to fetch attendance by date: ${error.message}`);
   }

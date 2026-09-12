@@ -1,5 +1,6 @@
 'use server';
 import prisma  from '@/lib/prisma';
+import type { DurationUnit } from '@prisma/client';
 
 import { requireRole, requireUser } from "@/lib/session";
 // Type definitions
@@ -7,7 +8,9 @@ export interface ServiceInput {
     name: string;
     description?: string;
     price: number;
-    duration: number; // Duration in months
+    duration: number;
+    /** MONTH (default) or DAY — the 7-day session is duration 7, unit DAY. */
+    durationUnit?: DurationUnit;
 }
 
 export interface ServiceResponse {
@@ -16,6 +19,7 @@ export interface ServiceResponse {
     description?: string | null;
     price: number;
     duration: number;
+    durationUnit: DurationUnit;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -37,12 +41,17 @@ export async function AddService(data: ServiceInput): Promise<ServiceResponse> {
             throw new Error('Duration must be a positive number');
         }
 
+        if (data.durationUnit && data.durationUnit !== 'MONTH' && data.durationUnit !== 'DAY') {
+            throw new Error('Duration must be in months or days');
+        }
+
         const service = await prisma.services.create({
             data: {
                 name: data.name,
                 description: data.description,
                 price: Number(data.price),
                 duration: Number(data.duration),
+                durationUnit: data.durationUnit ?? 'MONTH',
             },
         });
 

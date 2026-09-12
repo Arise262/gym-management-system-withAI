@@ -59,6 +59,37 @@ export function gymToday(asOf: Date = new Date()): string {
   return `${get("day")}-${get("month")}-${get("year")}`;
 }
 
+/** The wall-clock time at the gym, `HH:mm:ss` in Asia/Manila. Same reason as gymToday(). */
+export function gymTime(asOf: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Manila",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).format(asOf);
+}
+
+/** A stored `HH:mm:ss` wall-clock time as "7:15 am". Empty for a missing value. */
+export function formatClock(time?: string | null): string {
+  const [hour, minute] = String(time ?? "").split(":");
+  const h = Number.parseInt(hour, 10);
+  if (!Number.isFinite(h) || !minute) return "";
+  return `${h % 12 || 12}:${minute} ${h >= 12 ? "pm" : "am"}`;
+}
+
+/**
+ * The instant a Manila calendar day starts and ends, for filtering real
+ * DateTime columns (Payment.paidAt) by a `dd-MM-yyyy` gym day. Manila is UTC+8
+ * all year — the Philippines has no daylight saving.
+ */
+export function gymDayBounds(day: string): { start: Date; end: Date } | undefined {
+  const parsed = parse(day, "dd-MM-yyyy", new Date());
+  if (!isValid(parsed)) return undefined;
+  const start = new Date(Date.UTC(parsed.getFullYear(), parsed.getMonth(), parsed.getDate()) - 8 * 3600_000);
+  return { start, end: new Date(start.getTime() + 24 * 3600_000) };
+}
+
 /** Whole pesos, thousands-separated, no decimals — the app-wide money format. */
 export function pesos(n: number): string {
   return `₱${Math.round(n).toLocaleString("en-PH")}`;

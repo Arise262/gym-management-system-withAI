@@ -117,14 +117,22 @@ enum ActivityLevel {
 }
 
 model Services {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  price       Int
-  duration    Int
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  sales       Sales[]
+  id           String       @id @default(uuid())
+  name         String
+  description  String?
+  price        Int
+  /// How long one purchase lasts, in durationUnit. Monthly plans are the norm;
+  /// DAY exists for short plans such as the 7-day session.
+  duration     Int
+  durationUnit DurationUnit @default(MONTH)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  sales        Sales[]
+}
+
+enum DurationUnit {
+  MONTH
+  DAY
 }
 
 model Sales {
@@ -152,6 +160,51 @@ model Attendance {
   time      String   @default("00:00:00")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+/// A non-member who pays per session at the front desk.
+///
+/// Kept OUT of Attendance on purpose. Every Attendance row belongs to a
+/// Member, and retention, engagement and the dashboard all count
+/// Attendance.member_id — a guest row there would be scored as a member.
+model WalkIn {
+  id     String     @id @default(uuid())
+  /// Free text: a walk-in has no account, so the name is all the desk has.
+  name   String
+  rate   WalkInRate
+  /// Whole pesos, like Sales.amount. Copied from the rate at check-in, so a
+  /// later price change never rewrites what was actually charged.
+  amount Int
+  /// Null = not paid yet. A timestamp rather than a boolean so the desk can
+  /// see when the cash came in, not just whether it did.
+  paidAt DateTime?
+  /// "dd-MM-yyyy" in Asia/Manila, like Attendance.date.
+  date   String
+  time   String
+
+  /// WEEKLY purchases only: the last day the pass covers, "dd-MM-yyyy". The
+  /// visit it was bought on is day one.
+  validUntil String?
+  /// Set on a visit covered by a weekly pass: the id of the visit the pass was
+  /// bought on. A covered visit costs nothing (amount 0) — the money is on the
+  /// purchase row, so revenue sums without double counting.
+  passId     String?
+  pass       WalkIn?  @relation("WeeklyPass", fields: [passId], references: [id], onDelete: Restrict)
+  passVisits WalkIn[] @relation("WeeklyPass")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([date])
+  @@index([passId])
+}
+
+enum WalkInRate {
+  STUDENT
+  /// Everyone who is not a student.
+  REGULAR
+  /// A 7-day pass. Bought once; later visits in the week are covered by it.
+  WEEKLY
 }
 
 model FitnessRecord {
@@ -236,7 +289,7 @@ model Exercise {
 
   /// Slug from exercises.json, e.g. "3_4_Sit-Up". Unique so the library seed is
   /// idempotent — without it, re-seeding duplicates all 873 rows.
-  json_id String @unique
+  json_id         String   @unique
   name            String
   force           String?
   level           String?
@@ -560,6 +613,8 @@ model Payment {
   amount   Int
   currency String @default("PHP")
 
+  /// "paymongo" for online checkout, "cash" for money taken at the front desk.
+  /// Cash rows are written PAID on the spot and have no provider ids.
   provider           String        @default("paymongo")
   /// Unique so a replayed webhook cannot record the same payment twice.
   providerPaymentId  String?       @unique
