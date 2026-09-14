@@ -8,7 +8,7 @@
  * never be dialled. This happened to a real registration: a member typed
  * `0988841262`, passed a `\d{10,15}` check, and was stored as `988841262`.
  *
- * Every path that turns typed input into `Member.phone` or `Enquiry.phone`
+ * Every path that turns typed input into `Member.phone`
  * must go through here first.
  */
 

@@ -1,5 +1,4 @@
 'use client'
-import { GetEnquiryByFollowupDate } from '@/action/enquiries.action'
 import { getAllExpiringSalesInXDays, GetSalesEndingInXdays } from '@/action/sales.action'
 import { DataTable } from '@/components/custom/data-table'
 import { DatePickerDemo } from '@/components/custom/date-picker'

@@ -8,7 +8,7 @@ Built as a capstone project. **Live:** https://gym-management-mauve.vercel.app
 
 ## What it does
 
-**Admin** — dashboard (revenue, attendance, engagement, members at risk), members, sales and invoices, payments, retention scoring, enquiries, services, attendance, notifications.
+**Admin** — dashboard (revenue, attendance, engagement, members at risk), members, sales and invoices, payments, retention scoring, services, attendance, notifications.
 
 **Member** — AI workout plan with logging, progress and streaks, trainer browsing and booking, chat with a trainer, the AI assistant, balance and receipts. Installable as a PWA.
 
@@ -149,4 +149,4 @@ curl -H "Authorization: Bearer $CRON_SECRET" https://<your-host>/api/cron/daily
 
 ## Attribution
 
-This project began as a fork of [atharvaarbat/gym-management](https://github.com/atharvaarbat/gym-management), which provided the initial CRUD scaffolding for members, sales and enquiries. Everything since — authentication and role-based access, the schema as it now stands, all three AI features, payments, notifications and the scheduled job, the dashboards, the PWA, and the current interface — was built on top of it.
+This project began as a fork of [atharvaarbat/gym-management](https://github.com/atharvaarbat/gym-management), which provided the initial CRUD scaffolding for members and sales. Everything since — authentication and role-based access, the schema as it now stands, all three AI features, payments, notifications and the scheduled job, the dashboards, the PWA, and the current interface — was built on top of it.

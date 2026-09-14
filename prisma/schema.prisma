@@ -227,24 +227,6 @@ model FitnessRecord {
   updatedAt   DateTime @updatedAt
 }
 
-model Enquiry {
-  id           String      @id @default(uuid())
-  name         String
-  phone        BigInt
-  followupDate String?
-  message      String?
-  type         EnquiryType
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-}
-
-enum EnquiryType {
-  call
-  walkin
-  instagram
-  whatsapp
-}
-
 model ToDo {
   id        String   @id @default(uuid())
   title     String

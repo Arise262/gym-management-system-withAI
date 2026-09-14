@@ -13,11 +13,8 @@ import {
   IconDatabase,
   IconDoorEnter,
   IconFileAi,
-  IconFileDescription,
   IconListDetails,
-  IconQuestionMark,
   IconReport,
-  IconSearch,
   IconToiletPaper,
   IconUser,
   IconUserCancel,
@@ -83,11 +80,6 @@ const data = {
       icon: IconBell,
     },
     {
-      title: "Enquiries",
-      url: "/enquiries",
-      icon: IconSearch,
-    },
-    {
       title: "To Do",
       url: "/todo",
       icon: IconListDetails,
@@ -122,11 +114,6 @@ const data = {
       icon: IconDatabase,
     },
     {
-      name: "New Enquiry",
-      url: "/enquiries/new",
-      icon: IconFileDescription,
-    },
-    {
       name: "New Sale",
       url: "/sales/new",
       icon: IconFileAi,
@@ -138,11 +125,6 @@ const data = {
     },
   ],
   followups: [
-    {
-      name: "Enquiries",
-      url: "/enquiries/followups",
-      icon: IconQuestionMark,
-    },
     {
       name: "Membership",
       url: "/sales/followups",
