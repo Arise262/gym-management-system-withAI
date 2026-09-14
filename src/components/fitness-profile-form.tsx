@@ -149,7 +149,7 @@ export function FitnessProfileForm({
           </div>
 
           <div className="grid gap-3">
-            <Label>Equipment you can use</Label>
+            <Label>Equipment you want to use</Label>
             <p className="text-muted-foreground text-sm -mt-1">
               Leave all unchecked if you train at a fully equipped gym.
             </p>

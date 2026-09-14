@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 // import { AddMember } from '@/action/member.action'
 import { format, parseISO } from 'date-fns'
 import { AddExercise } from '@/action/exercise.action'
+import { exercisePhotos } from '@/lib/exercise-photos'
 // import { console } from 'inspector'
 type Props = {}
 
@@ -25,7 +26,7 @@ const page = (props: Props) => {
                 secondaryMuscles: element.secondaryMuscles || [],
                 instructions: element.instructions,
                 category: element.category,
-                images: element.images
+                images: exercisePhotos(element)
             })
             if(res.id){
                 console.log(i)

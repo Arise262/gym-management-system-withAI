@@ -177,8 +177,8 @@ const ExerciseCard = ({ exercise }: { exercise: ExerciseListItem }) => {
                             onError={() => setBroken(true)}
                         />
                     ) : (
-                        // Newer entries in the library ship without photography.
-                        // A branded placeholder beats a broken image icon.
+                        // Every exercise has a CBG photo now; this only shows if
+                        // one fails to load. A placeholder beats a broken image icon.
                         <div className="text-muted-foreground flex h-full w-full flex-col items-center justify-center gap-2">
                             <Dumbbell className="h-10 w-10 opacity-40" />
                             <span className="text-xs">No photo yet</span>

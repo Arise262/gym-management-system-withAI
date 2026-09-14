@@ -10,6 +10,7 @@
 import { PrismaClient } from "@prisma/client";
 import raw from "../src/action/exercises.json";
 import additions from "../src/action/exercises-2026.json";
+import { exercisePhotos } from "../src/lib/exercise-photos";
 
 const prisma = new PrismaClient();
 
@@ -50,7 +51,8 @@ async function main() {
     secondaryMuscle: e.secondaryMuscles ?? [],
     instructions: e.instructions ?? [],
     category: clean(e.category),
-    images: e.images ?? [],
+    // The source files' stock photo paths are replaced by CBG's own photos.
+    images: exercisePhotos(e),
   }));
 
   // Guard against a duplicate slug in the source file, which would make the

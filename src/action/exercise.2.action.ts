@@ -4,6 +4,7 @@ import {
     exerciseSummary,
     type GuidanceExercise,
 } from '@/lib/exercise-guidance'
+import { exercisePhotos } from '@/lib/exercise-photos'
 
 /** One row of the bundled library, as it sits in exercises.json. */
 export type LibraryExercise = GuidanceExercise & {
@@ -28,12 +29,14 @@ export type ExerciseListItem = {
  * exercises.json is the vendored free-exercise-db dump and is left untouched so
  * it can be re-pulled. exercises-2026.json holds movements that have become
  * standard programming since that dump and were missing from it — Bulgarian
- * split squats, Nordics, Copenhagen planks, carries, burpees and so on. They
- * ship without photography, which the cards and detail page handle.
+ * split squats, Nordics, Copenhagen planks, carries, burpees and so on.
+ *
+ * The photos both files list are replaced here by ones shot at CBG — see
+ * exercise-photos.ts for which exercise gets which.
  */
-const ALL = [...(Data as unknown as LibraryExercise[]), ...(Additions as LibraryExercise[])].sort(
-    (a, b) => a.name.localeCompare(b.name)
-)
+const ALL = [...(Data as unknown as LibraryExercise[]), ...(Additions as LibraryExercise[])]
+    .map((e) => ({ ...e, images: exercisePhotos(e) }))
+    .sort((a, b) => a.name.localeCompare(b.name))
 
 function toListItem(e: LibraryExercise): ExerciseListItem {
     return {

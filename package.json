@@ -13,6 +13,7 @@
     "db:studio": "prisma studio",
     "db:seed:demo": "tsx prisma/seed-demo.ts",
     "db:seed:exercises": "tsx prisma/seed-exercises.ts",
+    "db:sync:exercise-photos": "tsx prisma/sync-exercise-photos.ts",
     "db:seed:retention": "tsx prisma/seed-retention.ts",
     "db:seed:activity": "tsx prisma/seed-activity.ts"
   },

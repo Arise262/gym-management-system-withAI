@@ -24,6 +24,7 @@ import {
     displayLevel,
     withArticle,
 } from '@/lib/exercise-guidance'
+import { isOwnPhoto } from '@/lib/exercise-photos'
 
 type Props = {
     params: Promise<{ exercise_id: string }>
@@ -47,6 +48,7 @@ const ExercisePage = async ({ params }: Props) => {
     const rx = exercisePrescription(exercise)
     const tips = exerciseTips(exercise)
     const related = getRelatedExercises(exercise.id)
+    const ownPhoto = isOwnPhoto(exercise.id)
 
     return (
         <div className="container mx-auto max-w-5xl px-4 py-8">
@@ -137,23 +139,34 @@ const ExercisePage = async ({ params }: Props) => {
                 </CardContent>
             </Card>
 
-            {/* Images */}
+            {/* Images — shot at CBG. Only photos of this exact movement get
+                Start/Finish labels; a borrowed one would be mislabelled. */}
             {exercise.images?.length > 0 && (
-                <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-                    {exercise.images.map((image, index) => (
-                        <Card key={image} className="overflow-hidden p-0">
-                            <div className="relative flex aspect-video items-center justify-center">
-                                <img
-                                    src={`/exercises/${image}`}
-                                    alt={`${exercise.name} — position ${index + 1}`}
-                                    className="h-full w-full object-contain"
-                                />
-                                <Badge className="absolute right-2 bottom-2">
-                                    {index === 0 ? 'Start' : index === exercise.images.length - 1 ? 'Finish' : index + 1}
-                                </Badge>
-                            </div>
-                        </Card>
-                    ))}
+                <div className="mb-6">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        {exercise.images.map((image, index) => (
+                            <Card key={image} className="overflow-hidden p-0">
+                                <div className="relative flex aspect-video items-center justify-center">
+                                    <img
+                                        src={`/exercises/${image}`}
+                                        alt={`${exercise.name} — position ${index + 1}`}
+                                        className="h-full w-full object-contain"
+                                    />
+                                    {ownPhoto && (
+                                        <Badge className="absolute right-2 bottom-2">
+                                            {index === 0 ? 'Start' : index === exercise.images.length - 1 ? 'Finish' : index + 1}
+                                        </Badge>
+                                    )}
+                                </div>
+                            </Card>
+                        ))}
+                    </div>
+                    {!ownPhoto && (
+                        <p className="text-muted-foreground mt-2 text-xs">
+                            Photos taken at CBG of a related movement for the same muscles — follow the
+                            steps below for this exercise.
+                        </p>
+                    )}
                 </div>
             )}
 
