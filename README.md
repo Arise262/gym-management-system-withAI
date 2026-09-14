@@ -1,6 +1,6 @@
 # CBG Fitness Center — AI-Powered Gym Management System
 
-A production web application for a real gym in Makati, Philippines. It handles membership, attendance, payments, trainer booking and messaging, and adds three AI features: a workout planner, a churn-risk model, and a member assistant grounded in that member's own records.
+A production web application for a real gym in Makati, Philippines. It handles membership, attendance, payments, trainer booking and messaging, and adds four AI features: a workout planner, a churn-risk model, a progress prediction built on the member's nutrition phase, and a member assistant grounded in that member's own records.
 
 Built as a capstone project. **Live:** https://gym-management-mauve.vercel.app
 
@@ -10,7 +10,7 @@ Built as a capstone project. **Live:** https://gym-management-mauve.vercel.app
 
 **Admin** — dashboard (revenue, attendance, engagement, members at risk), members, sales and invoices, payments, retention scoring, services, attendance, notifications.
 
-**Member** — AI workout plan with logging, progress and streaks, trainer browsing and booking, chat with a trainer, the AI assistant, balance and receipts. Installable as a PWA.
+**Member** — AI workout plan with logging, an exercise library with instructions for every movement, nutrition targets and a progress prediction, progress and streaks, trainer browsing and booking, chat with a trainer, the AI assistant, balance and receipts. Installable as a PWA.
 
 **Trainer** — schedule with confirm / complete / no-show, client list with engagement, announcements to their own members.
 
@@ -44,6 +44,14 @@ Each normalises to 0–1; the weighted sum × 100 gives a risk score, with bands
 ### 3. Member assistant — `claude-haiku-4-5`
 
 Answers from one member's own plan, logged workouts, bookings and balance. Their churn score is passed in as a tone hint the model is instructed never to surface, and medical questions are redirected to a trainer or doctor rather than answered.
+
+### 4. Nutrition and progress prediction — formulas, explained by `claude-haiku-4-5`
+
+The member picks **Cut, Maintain or Bulk** and gets daily calories, protein, carbs and fats, with suggestions from foods sold in the Philippines. The Progress page then predicts their weight at 1, 3, 6 and 12 months, when they will reach their target, and — from their weekly weigh-ins — whether they are on track.
+
+Every number comes from formulas, not the model. Calorie needs use Mifflin–St Jeor and the standard activity factors. Weight is predicted with a week-by-week energy-balance simulation: maintenance is recalculated from the predicted weight each week, so the curve flattens the way real weight change does instead of running in a straight line. Results are shown as a range, a cut never goes below a BMI of 18.5, and no targets are given to members under 18.
+
+Claude only writes a short plain-English explanation of those numbers. Any number in its reply that was not in the facts it was given gets the reply thrown away — the model can word the numbers, never change them.
 
 ---
 
