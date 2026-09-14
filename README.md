@@ -52,7 +52,7 @@ Answers from one member's own plan, logged workouts, bookings and balance. Their
 | Layer | Choice |
 |---|---|
 | Framework | Next.js 15 (App Router), TypeScript, server actions |
-| Database | PostgreSQL via Prisma — 15 models / 25 tables |
+| Database | PostgreSQL via Prisma — 26 models, 18 enums |
 | Auth | Auth.js v5, credentials provider, bcrypt cost 12 |
 | UI | Tailwind CSS v4, shadcn/ui, Recharts |
 | AI | Claude API (`@anthropic-ai/sdk`), structured output validated with Zod |
