@@ -57,7 +57,9 @@ export async function GetDayForLogging(planDayId: string) {
         orderBy: { orderIndex: "asc" },
         include: {
           exercise: {
-            select: { id: true, name: true, equipment: true, primaryMuscle: true },
+            select: {
+              id: true, json_id: true, name: true, equipment: true, primaryMuscle: true,
+            },
           },
         },
       },

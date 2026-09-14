@@ -4,7 +4,7 @@ import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Link from "next/link";
-import { IconSparkles, IconBarbell, IconMoon, IconCircleCheck, IconPencilPlus } from "@tabler/icons-react";
+import { IconSparkles, IconBarbell, IconMoon, IconCircleCheck, IconPencilPlus, IconInfoCircle } from "@tabler/icons-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,6 +19,7 @@ type PlanExercise = {
   notes: string | null;
   exercise: {
     id: string;
+    json_id: string;
     name: string;
     equipment: string | null;
     primaryMuscle: string[];
@@ -165,7 +166,16 @@ export function WorkoutPlanView({
                               {i + 1}.
                             </span>
                             <div className="flex-1">
-                              <div className="font-medium">{ex.exercise.name}</div>
+                              {/* Every planned exercise is a real library row
+                                  (the planner can only pick by FK), so the name
+                                  can always link to how to perform it. */}
+                              <Link
+                                href={`/member/workout/${ex.exercise.json_id}`}
+                                className="group inline-flex items-center gap-1 font-medium hover:underline"
+                              >
+                                {ex.exercise.name}
+                                <IconInfoCircle className="text-muted-foreground size-4 shrink-0" />
+                              </Link>
                               <div className="text-muted-foreground text-sm">
                                 {ex.sets} sets × {ex.reps} reps · {ex.restSeconds}s rest
                               </div>

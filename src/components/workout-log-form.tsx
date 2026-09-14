@@ -3,7 +3,8 @@
 import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { IconCheck, IconDeviceFloppy } from "@tabler/icons-react";
+import Link from "next/link";
+import { IconCheck, IconDeviceFloppy, IconInfoCircle } from "@tabler/icons-react";
 import { LogWorkoutSession } from "@/action/workout-session.action";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,13 @@ type LogExercise = {
   reps: string;
   restSeconds: number;
   notes: string | null;
-  exercise: { id: string; name: string; equipment: string | null; primaryMuscle: string[] };
+  exercise: {
+    id: string;
+    json_id: string;
+    name: string;
+    equipment: string | null;
+    primaryMuscle: string[];
+  };
 };
 
 type ExistingLog = {
@@ -108,7 +115,17 @@ export function WorkoutLogForm(props: LogFormProps) {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <CardTitle className="text-base">
-                    {i + 1}. {ex.exercise.name}
+                    {i + 1}.{" "}
+                    {/* Links to the library entry, so a member mid-session can
+                        check the form without leaving the log half-filled. */}
+                    <Link
+                      href={`/member/workout/${ex.exercise.json_id}`}
+                      target="_blank"
+                      className="inline-flex items-center gap-1 hover:underline"
+                    >
+                      {ex.exercise.name}
+                      <IconInfoCircle className="text-muted-foreground size-4 shrink-0" />
+                    </Link>
                   </CardTitle>
                   <CardDescription>
                     Prescribed: {ex.sets} sets × {ex.reps} reps · {ex.restSeconds}s rest

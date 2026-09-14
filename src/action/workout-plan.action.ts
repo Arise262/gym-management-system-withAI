@@ -207,7 +207,10 @@ export async function GetActivePlan(memberId?: string) {
             include: {
               exercise: {
                 select: {
-                  id: true, name: true, equipment: true,
+                  // json_id is the library slug, and the only thing that can
+                  // address /member/workout/<slug>. Without it a planned
+                  // exercise cannot link back to how you actually perform it.
+                  id: true, json_id: true, name: true, equipment: true,
                   primaryMuscle: true, instructions: true, images: true,
                 },
               },
