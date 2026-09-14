@@ -77,22 +77,65 @@ export async function GetAdminDashboard(): Promise<AdminDashboard> {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const monthStart = startOfMonth(today);
+  const weeks = completedWeeks(today, 8);
+  const weekStarts = weeks.map((w) => weekKeyDate(w.start));
+
+  // Every read this dashboard needs, fired together. None depends on another
+  // (the retention groupBy below is the one exception), so awaiting them one
+  // by one cost fourteen round trips where three will do. Each query is
+  // unchanged from when it stood alone; only the waiting overlaps.
+  const [
+    members,
+    sales,
+    walkIns,
+    onlinePaid,
+    attendance,
+    latestScore,
+    metrics,
+    activePlans,
+    bookings,
+    aiPlans,
+    aiPlansThisMonth,
+    assistantReplies,
+    notifications7d,
+  ] = await Promise.all([
+    prisma.member.findMany({ select: { id: true, name: true, memberCode: true, DOJ: true } }),
+    prisma.sales.findMany({
+      select: {
+        id: true,
+        member_id: true,
+        startDate: true,
+        endDate: true,
+        amount: true,
+        discount: true,
+        paid: true,
+        createdAt: true,
+        service: { select: { name: true } },
+      },
+    }),
+    // Walk-in fees land in the month of the visit, beside the memberships.
+    prisma.walkIn.findMany({ select: { date: true, amount: true, paidAt: true } }),
+    // provider "paymongo" only — desk cash is also a PAID Payment row now, and
+    // counting it here would label cash as online.
+    prisma.payment.aggregate({
+      _sum: { amount: true },
+      where: { status: "PAID", provider: "paymongo", paidAt: { gte: monthStart } },
+    }),
+    prisma.attendance.findMany({ select: { member_id: true, date: true } }),
+    prisma.retentionScore.findFirst({ orderBy: { scoreDate: "desc" }, select: { scoreDate: true } }),
+    prisma.engagementMetric.findMany({
+      where: { periodStart: { in: weekStarts } },
+      select: { periodStart: true, workoutsCompleted: true, engagementScore: true, consistencyRate: true },
+    }),
+    prisma.workoutPlan.count({ where: { status: "ACTIVE" } }),
+    prisma.booking.findMany({ select: { date: true, status: true } }),
+    prisma.workoutPlan.count({ where: { generatedBy: "AI" } }),
+    prisma.workoutPlan.count({ where: { generatedBy: "AI", createdAt: { gte: monthStart } } }),
+    prisma.message.count({ where: { role: "ASSISTANT" } }),
+    prisma.notification.count({ where: { createdAt: { gte: addDays(now, -7) } } }),
+  ]);
 
   /* ── members & sales ── */
-  const members = await prisma.member.findMany({ select: { id: true, name: true, memberCode: true, DOJ: true } });
-  const sales = await prisma.sales.findMany({
-    select: {
-      id: true,
-      member_id: true,
-      startDate: true,
-      endDate: true,
-      amount: true,
-      discount: true,
-      paid: true,
-      createdAt: true,
-      service: { select: { name: true } },
-    },
-  });
 
   const memberById = new Map(members.map((m) => [m.id, m]));
   const activeMembers = new Set<string>();
@@ -152,8 +195,6 @@ export async function GetAdminDashboard(): Promise<AdminDashboard> {
     }
   }
 
-  // Walk-in fees land in the month of the visit, beside the memberships.
-  const walkIns = await prisma.walkIn.findMany({ select: { date: true, amount: true, paidAt: true } });
   let walkInsThisMonth = 0;
   let walkInCashThisMonth = 0;
   for (const w of walkIns) {
@@ -173,16 +214,9 @@ export async function GetAdminDashboard(): Promise<AdminDashboard> {
     }
   }
 
-  // provider "paymongo" only — desk cash is also a PAID Payment row now, and
-  // counting it here would label cash as online.
-  const onlinePaid = await prisma.payment.aggregate({
-    _sum: { amount: true },
-    where: { status: "PAID", provider: "paymongo", paidAt: { gte: monthStart } },
-  });
   const onlinePaidThisMonth = Math.round((onlinePaid._sum.amount ?? 0) / 100);
 
   /* ── attendance, last 30 days ── */
-  const attendance = await prisma.attendance.findMany({ select: { member_id: true, date: true } });
   const dayIndex = new Map<string, number>();
   const days: AdminDashboard["attendance"]["days"] = [];
   for (let i = 29; i >= 0; i--) {
@@ -212,8 +246,7 @@ export async function GetAdminDashboard(): Promise<AdminDashboard> {
     }
   }
 
-  /* ── retention: latest run ── */
-  const latestScore = await prisma.retentionScore.findFirst({ orderBy: { scoreDate: "desc" }, select: { scoreDate: true } });
+  /* ── retention: latest run (the groupBy needs the latest date first) ── */
   const byLevel = emptyLevels();
   if (latestScore) {
     const grouped = await prisma.retentionScore.groupBy({
@@ -225,12 +258,6 @@ export async function GetAdminDashboard(): Promise<AdminDashboard> {
   }
 
   /* ── engagement: last 8 complete weeks ── */
-  const weeks = completedWeeks(today, 8);
-  const weekStarts = weeks.map((w) => weekKeyDate(w.start));
-  const metrics = await prisma.engagementMetric.findMany({
-    where: { periodStart: { in: weekStarts } },
-    select: { periodStart: true, workoutsCompleted: true, engagementScore: true, consistencyRate: true },
-  });
   const engWeeks: AdminDashboard["engagement"]["weeks"] = weeks.map((w) => ({
     label: format(w.start, "d MMM"),
     value: 0,
@@ -248,12 +275,10 @@ export async function GetAdminDashboard(): Promise<AdminDashboard> {
   }
   scoreAcc.forEach((s, i) => (engWeeks[i].avgScore = s.n ? Math.round(s.sum / s.n) : null));
   const last = scoreAcc[scoreAcc.length - 1];
-  const activePlans = await prisma.workoutPlan.count({ where: { status: "ACTIVE" } });
 
   /* ── bookings this week ── */
   const weekStart = isoWeekStart(today);
   const weekEnd = addDays(weekStart, 6);
-  const bookings = await prisma.booking.findMany({ select: { date: true, status: true } });
   const thisWeek: Record<BookingStatus, number> = { PENDING: 0, CONFIRMED: 0, COMPLETED: 0, CANCELLED: 0, NO_SHOW: 0 };
   let upcoming = 0;
   for (const b of bookings) {
@@ -262,12 +287,6 @@ export async function GetAdminDashboard(): Promise<AdminDashboard> {
     if (d >= weekStart && d <= weekEnd) thisWeek[b.status] += 1;
     if (d >= today && (b.status === "PENDING" || b.status === "CONFIRMED")) upcoming += 1;
   }
-
-  /* ── AI usage ── */
-  const aiPlans = await prisma.workoutPlan.count({ where: { generatedBy: "AI" } });
-  const aiPlansThisMonth = await prisma.workoutPlan.count({ where: { generatedBy: "AI", createdAt: { gte: monthStart } } });
-  const assistantReplies = await prisma.message.count({ where: { role: "ASSISTANT" } });
-  const notifications7d = await prisma.notification.count({ where: { createdAt: { gte: addDays(now, -7) } } });
 
   return {
     asOf: now.toISOString(),
@@ -316,16 +335,32 @@ export async function GetMemberProgress(): Promise<MemberProgress> {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-  const sessions = await prisma.workoutSession.findMany({
-    where: { memberId, completed: true },
-    select: {
-      date: true,
-      durationMinutes: true,
-      planDayId: true,
-      createdAt: true,
-      logs: { select: { setsCompleted: true, repsCompleted: true, weightKg: true, completed: true } },
-    },
-  });
+  // Five independent reads, one round of waiting. Same queries as before —
+  // they were just awaited in sequence.
+  const [sessions, attendance, plan, records, metric] = await Promise.all([
+    prisma.workoutSession.findMany({
+      where: { memberId, completed: true },
+      select: {
+        date: true,
+        durationMinutes: true,
+        planDayId: true,
+        createdAt: true,
+        logs: { select: { setsCompleted: true, repsCompleted: true, weightKg: true, completed: true } },
+      },
+    }),
+    prisma.attendance.findMany({ where: { member_id: memberId }, select: { date: true } }),
+    prisma.workoutPlan.findFirst({
+      where: { memberId, status: "ACTIVE" },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, title: true, daysPerWeek: true, durationWeeks: true, createdAt: true, days: { select: { id: true } } },
+    }),
+    prisma.fitnessRecord.findMany({ where: { member_id: memberId }, select: { date: true, weight: true } }),
+    prisma.engagementMetric.findFirst({
+      where: { memberId },
+      orderBy: { periodStart: "desc" },
+      select: { engagementScore: true, consistencyRate: true, periodStart: true },
+    }),
+  ]);
 
   // Eight complete weeks plus the current one, oldest first.
   const past = completedWeeks(today, 7);
@@ -358,7 +393,6 @@ export async function GetMemberProgress(): Promise<MemberProgress> {
   for (; i >= 0 && buckets[i].workouts > 0; i--) streak += 1;
 
   /* ── attendance ── */
-  const attendance = await prisma.attendance.findMany({ where: { member_id: memberId }, select: { date: true } });
   const monthStart = startOfMonth(today);
   let thisMonth = 0;
   let last30 = 0;
@@ -370,11 +404,6 @@ export async function GetMemberProgress(): Promise<MemberProgress> {
   }
 
   /* ── active plan adherence ── */
-  const plan = await prisma.workoutPlan.findFirst({
-    where: { memberId, status: "ACTIVE" },
-    orderBy: { createdAt: "desc" },
-    select: { id: true, title: true, daysPerWeek: true, durationWeeks: true, createdAt: true, days: { select: { id: true } } },
-  });
   let planOut: MemberProgress["plan"] = null;
   if (plan) {
     const dayIds = new Set(plan.days.map((d) => d.id));
@@ -392,19 +421,11 @@ export async function GetMemberProgress(): Promise<MemberProgress> {
   }
 
   /* ── body weight trend ── */
-  const records = await prisma.fitnessRecord.findMany({ where: { member_id: memberId }, select: { date: true, weight: true } });
   const weights = records
     .map((r) => ({ d: parseGymDate(r.date), weight: r.weight, date: r.date }))
     .filter((r): r is { d: Date; weight: number; date: string } => Boolean(r.d) && r.weight > 0)
     .sort((a, b) => a.d.getTime() - b.d.getTime())
     .map((r) => ({ label: format(r.d, "d MMM"), value: r.weight, date: r.date }));
-
-  /* ── latest engagement metric ── */
-  const metric = await prisma.engagementMetric.findFirst({
-    where: { memberId },
-    orderBy: { periodStart: "desc" },
-    select: { engagementScore: true, consistencyRate: true, periodStart: true },
-  });
 
   return {
     weeks: buckets,
@@ -442,31 +463,35 @@ export async function GetTrainerClients(): Promise<TrainerClient[]> {
   const trainer = await prisma.trainer.findUnique({ where: { userId: user.id }, select: { id: true } });
   if (!trainer) return [];
 
-  const bookings = await prisma.booking.findMany({
-    where: { trainerId: trainer.id, status: { not: "CANCELLED" } },
-    select: { memberId: true, date: true, status: true },
-  });
-  const plans = await prisma.workoutPlan.findMany({
-    where: { trainerId: trainer.id },
-    select: { memberId: true, title: true, status: true },
-  });
+  const [bookings, plans] = await Promise.all([
+    prisma.booking.findMany({
+      where: { trainerId: trainer.id, status: { not: "CANCELLED" } },
+      select: { memberId: true, date: true, status: true },
+    }),
+    prisma.workoutPlan.findMany({
+      where: { trainerId: trainer.id },
+      select: { memberId: true, title: true, status: true },
+    }),
+  ]);
   const ids = [...new Set([...bookings.map((b) => b.memberId), ...plans.map((p) => p.memberId)])];
   if (ids.length === 0) return [];
 
-  const members = await prisma.member.findMany({ where: { id: { in: ids } }, select: { id: true, name: true, memberCode: true } });
-  const activePlans = await prisma.workoutPlan.findMany({
-    where: { memberId: { in: ids }, status: "ACTIVE" },
-    select: { memberId: true, title: true },
-  });
-  const sessions = await prisma.workoutSession.findMany({
-    where: { memberId: { in: ids }, completed: true },
-    select: { memberId: true, date: true },
-  });
-  const latestMetrics = await prisma.engagementMetric.findMany({
-    where: { memberId: { in: ids } },
-    orderBy: { periodStart: "desc" },
-    select: { memberId: true, engagementScore: true },
-  });
+  const [members, activePlans, sessions, latestMetrics] = await Promise.all([
+    prisma.member.findMany({ where: { id: { in: ids } }, select: { id: true, name: true, memberCode: true } }),
+    prisma.workoutPlan.findMany({
+      where: { memberId: { in: ids }, status: "ACTIVE" },
+      select: { memberId: true, title: true },
+    }),
+    prisma.workoutSession.findMany({
+      where: { memberId: { in: ids }, completed: true },
+      select: { memberId: true, date: true },
+    }),
+    prisma.engagementMetric.findMany({
+      where: { memberId: { in: ids } },
+      orderBy: { periodStart: "desc" },
+      select: { memberId: true, engagementScore: true },
+    }),
+  ]);
 
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());

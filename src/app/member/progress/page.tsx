@@ -16,10 +16,7 @@ export const metadata = { title: "My progress" };
  * the session inside GetMemberProgress — there is no id in the URL to tamper with.
  */
 export default async function MemberProgressPage() {
-  const p = await GetMemberProgress();
-  // Sequential on purpose: the pool has one connection, so Promise.all would
-  // queue these anyway.
-  const nutrition = await GetMyNutrition();
+  const [p, nutrition] = await Promise.all([GetMemberProgress(), GetMyNutrition()]);
   const thisWeek = p.weeks[p.weeks.length - 1];
   const hasVolume = p.weeks.some((w) => w.volumeKg > 0);
 

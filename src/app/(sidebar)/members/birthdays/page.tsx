@@ -32,7 +32,11 @@ const page = (props: Props) => {
         setIsLoading(true)
         fetchData()
     }, [])
+    const first = React.useRef(true)
     useEffect(() => {
+        // The mount effect above already fetched today's list; this one is
+        // for the date picker only. Without the guard both ran at mount.
+        if (first.current) { first.current = false; return }
         setIsLoading(true)
         fetchData()
     }, [date])

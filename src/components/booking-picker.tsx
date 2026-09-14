@@ -73,7 +73,6 @@ export function BookingPicker({ trainer, initialDate, initialSlots }: {
     if (state?.success) {
       toast.success("Booking requested — your trainer will confirm it.");
       router.push("/member/bookings");
-      router.refresh();
     } else if (state && !state.success) {
       toast.error(state.error);
       // The slot list is stale whenever a booking is refused: someone else may

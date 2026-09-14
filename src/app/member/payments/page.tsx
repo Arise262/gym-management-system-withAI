@@ -26,8 +26,7 @@ export default async function PaymentsPage({
   searchParams: Promise<{ paid?: string; cancelled?: string }>;
 }) {
   const sp = await searchParams;
-  const outstanding = await GetMyOutstanding();
-  const payments = await GetMyPayments();
+  const [outstanding, payments] = await Promise.all([GetMyOutstanding(), GetMyPayments()]);
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4 p-4">

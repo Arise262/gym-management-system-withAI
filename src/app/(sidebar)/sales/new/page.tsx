@@ -55,8 +55,9 @@ const NewSalePage = () => {
 
     useEffect(() => {
         async function fetchData() {
-            setMembers(await GetAllMembers())
-            setServices(await GetAllServices())
+            const [members, services] = await Promise.all([GetAllMembers(), GetAllServices()])
+            setMembers(members)
+            setServices(services)
         }
         fetchData()
     }, [])

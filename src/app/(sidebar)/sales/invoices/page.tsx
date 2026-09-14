@@ -1,24 +1,16 @@
 'use client'
-import { GetAllMembers, MemberResponse } from '@/action/member.action'
 import ItemSelector from '@/components/custom/item-selector'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import Link from 'next/link'
-import React, { useEffect } from 'react'
+import React from 'react'
 
 type Props = {}
 
 const page = (props: Props) => {
-    const [members, setMembers] = React.useState<MemberResponse[]>([])
-    const [selectedMember, setSelectedMember] = React.useState<any>({})
-    useEffect(() => {
-        async function fetchData() {
-            setMembers(await GetAllMembers())
-            //  setServices(await GetAllServices())
-        }
-        fetchData()
-    }, [])
+    // The member selector below is commented out, so nothing here needs the
+    // member list — the fetch that used to run on mount was pure cost.
     return (
         <div className='max-w-xl w-full mx-auto space-y-6 p-4'>
             <div className='flex items-center justify-between'>

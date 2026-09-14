@@ -79,7 +79,6 @@ export function WorkoutLogForm(props: LogFormProps) {
     if (state?.success) {
       toast.success("Workout logged");
       router.push("/member/workout-plan");
-      router.refresh();
     } else if (state && !state.success) {
       toast.error(state.error);
     }

@@ -82,27 +82,30 @@ export type NutritionView = {
 };
 
 export async function buildNutritionView(memberId: string, db: Db): Promise<NutritionView> {
-  const member = await db.member.findUniqueOrThrow({
-    where: { id: memberId },
-    select: {
-      name: true,
-      DOB: true,
-      gender: true,
-      heightCm: true,
-      activityLevel: true,
-      targetWeightKg: true,
-      experienceLevel: true,
-      medicalNotes: true,
-    },
-  });
-  const records = await db.fitnessRecord.findMany({
-    where: { member_id: memberId },
-    select: { date: true, weight: true },
-  });
-  const plan = await db.nutritionPlan.findFirst({
-    where: { memberId, status: "ACTIVE" },
-    orderBy: { createdAt: "desc" },
-  });
+  // Three independent reads, awaited together.
+  const [member, records, plan] = await Promise.all([
+    db.member.findUniqueOrThrow({
+      where: { id: memberId },
+      select: {
+        name: true,
+        DOB: true,
+        gender: true,
+        heightCm: true,
+        activityLevel: true,
+        targetWeightKg: true,
+        experienceLevel: true,
+        medicalNotes: true,
+      },
+    }),
+    db.fitnessRecord.findMany({
+      where: { member_id: memberId },
+      select: { date: true, weight: true },
+    }),
+    db.nutritionPlan.findFirst({
+      where: { memberId, status: "ACTIVE" },
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
 
   const weighIns = records
     .map((r) => ({ day: parseGymDate(r.date), date: r.date, weightKg: r.weight }))

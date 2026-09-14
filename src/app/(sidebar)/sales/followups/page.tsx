@@ -9,7 +9,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useLoading } from '@/hooks/use-loading'
 import { format } from 'date-fns'
 import Link from 'next/link'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 
 type Props = {}
 
@@ -47,7 +47,11 @@ const page = (props: Props) => {
         showLoading()
         fetchData()
     }, [])
+    const first = useRef(true)
     useEffect(() => {
+        // The mount effect above already fetched; this one is for the tab
+        // change only. Without the guard both ran at mount.
+        if (first.current) { first.current = false; return }
         showLoading()
         fetchData()
     }, [days])

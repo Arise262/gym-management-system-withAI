@@ -6,6 +6,11 @@
 
 generator client {
   provider = "prisma-client-js"
+  // relationJoins: fetch a query's `include`s in ONE SQL statement (LATERAL
+  // JOINs) instead of one round trip per relation. The database is a ~30 ms
+  // round trip from production and ~1.5 s from a Manila laptop, so a members
+  // list with sales and services went from three trips to one.
+  previewFeatures = ["relationJoins"]
 }
 
 datasource db {

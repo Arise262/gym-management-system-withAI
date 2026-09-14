@@ -19,9 +19,11 @@ import { gymToday } from "@/lib/format";
 
 export default async function Page() {
   const user = await requireRole("TRAINER");
-  const bookings = await GetTrainerBookings();
-  const unread = await GetUnreadCount();
-  const clients = await GetTrainerClients();
+  const [bookings, unread, clients] = await Promise.all([
+    GetTrainerBookings(),
+    GetUnreadCount(),
+    GetTrainerClients(),
+  ]);
 
   const today = gymToday();
   const upcoming = bookings.filter((b) => !["COMPLETED", "CANCELLED", "NO_SHOW"].includes(b.status));

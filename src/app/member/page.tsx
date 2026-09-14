@@ -13,8 +13,7 @@ import { GetUnreadCount } from '@/action/notification.action'
 // Server component: the member is resolved from the session inside the action,
 // so there is no client fetch and no id in the browser to tamper with.
 export default async function Page() {
-  const data = await getAllDetailsOfMember()
-  const unread = await GetUnreadCount()
+  const [data, unread] = await Promise.all([getAllDetailsOfMember(), GetUnreadCount()])
 
   return (
     // max-w-2xl rather than max-w-xl: the action grid needs the room, and the

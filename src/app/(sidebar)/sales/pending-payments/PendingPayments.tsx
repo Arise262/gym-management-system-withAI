@@ -33,21 +33,20 @@ const columns = [
 const PendingPayments = ({ }: Props) => {
     const [data, setData] = React.useState<any>()
     const [isLoading, setIsLoading] = React.useState(true)
-    useEffect(() => {
+    const fetchData = React.useCallback(async () => {
         setIsLoading(true)
-        const fetchData = async () => {
-            try {
-                const pendingPayments = (await GetSalesWithPendingAmount())
-                setData(pendingPayments)
-                setIsLoading(false)
-            } catch (error) {
-                console.error("Error fetching data:", error)
-                setIsLoading(false)
-            }
+        try {
+            const pendingPayments = (await GetSalesWithPendingAmount())
+            setData(pendingPayments)
+        } catch (error) {
+            console.error("Error fetching data:", error)
+        } finally {
+            setIsLoading(false)
         }
-
-        fetchData()
     }, [])
+    useEffect(() => {
+        fetchData()
+    }, [fetchData])
 
     const actions = [
         {
@@ -67,7 +66,7 @@ const PendingPayments = ({ }: Props) => {
             accessorKey: 'id',
             header: 'Pay',
             cellContent: <Button className='cursor-pointer'>Pay</Button>,
-            cellContentGetRow: (row: any) => <PayPendingDialog sale_id={row.id} sale={row} onSuccess={() => window.location.reload()} />,
+            cellContentGetRow: (row: any) => <PayPendingDialog sale_id={row.id} sale={row} onSuccess={fetchData} />,
         }
     ]
     return (

@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import type { Role } from "@prisma/client";
 import { auth } from "@/lib/auth";
@@ -49,11 +50,22 @@ export async function requireRole(...roles: Role[]): Promise<SessionUser> {
   // expired. Trainers are the accounts the admin deactivates, so they pay one
   // indexed lookup per request; members and admins are not affected.
   if (user.role === "TRAINER") {
-    const account = await prisma.user.findUnique({ where: { id: user.id }, select: { isActive: true } });
-    if (!account?.isActive) redirect("/account-disabled");
+    if (!(await trainerIsActive(user.id))) redirect("/account-disabled");
   }
   return user;
 }
+
+/**
+ * One lookup per request, not one per caller. The trainer home page calls
+ * requireRole from its layout, the page, and each action it awaits — four
+ * identical queries. React's cache() dedupes them within a single render;
+ * a later request (a server action, the next navigation) checks again, so a
+ * deactivation still bites on the very next thing the trainer does.
+ */
+const trainerIsActive = cache(async (userId: string): Promise<boolean> => {
+  const account = await prisma.user.findUnique({ where: { id: userId }, select: { isActive: true } });
+  return Boolean(account?.isActive);
+});
 
 /** Where each role belongs when it ends up somewhere it has no business being. */
 const HOME_BY_ROLE: Record<Role, string> = {

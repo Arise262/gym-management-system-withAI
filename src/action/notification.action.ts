@@ -214,37 +214,38 @@ export async function GetNotificationOverview(): Promise<NotificationOverview> {
 
   const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-  const latestScore = await prisma.retentionScore.findFirst({
-    orderBy: { scoreDate: "desc" },
-    select: { scoreDate: true },
-  });
-
-  const grouped = await prisma.notification.groupBy({
-    by: ["type"],
-    where: { createdAt: { gte: since } },
-    _count: { _all: true },
-  });
-  const emailedGrouped = await prisma.notification.groupBy({
-    by: ["type"],
-    where: { createdAt: { gte: since }, sentAt: { not: null } },
-    _count: { _all: true },
-  });
-  const emailedByType = new Map(emailedGrouped.map((g) => [g.type, g._count._all]));
-
-  const recentRows = await prisma.notification.findMany({
-    orderBy: { createdAt: "desc" },
-    take: 30,
-    include: {
-      user: {
-        select: {
-          email: true,
-          role: true,
-          member: { select: { name: true } },
-          trainer: { select: { name: true } },
+  // Four independent reads, awaited together.
+  const [latestScore, grouped, emailedGrouped, recentRows] = await Promise.all([
+    prisma.retentionScore.findFirst({
+      orderBy: { scoreDate: "desc" },
+      select: { scoreDate: true },
+    }),
+    prisma.notification.groupBy({
+      by: ["type"],
+      where: { createdAt: { gte: since } },
+      _count: { _all: true },
+    }),
+    prisma.notification.groupBy({
+      by: ["type"],
+      where: { createdAt: { gte: since }, sentAt: { not: null } },
+      _count: { _all: true },
+    }),
+    prisma.notification.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 30,
+      include: {
+        user: {
+          select: {
+            email: true,
+            role: true,
+            member: { select: { name: true } },
+            trainer: { select: { name: true } },
+          },
         },
       },
-    },
-  });
+    }),
+  ]);
+  const emailedByType = new Map(emailedGrouped.map((g) => [g.type, g._count._all]));
 
   return {
     mailConfigured: hasMailKey(),

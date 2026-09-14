@@ -59,7 +59,7 @@ const SalesPage = (props: Props) => {
       onClick: async (rowId: any) => {
         const result = await DeleteSaleById(rowId)
         toast.success("Sales deleted successfully")
-        window.location.reload()
+        setSalesList((rows) => rows.filter((r: any) => r.id !== rowId))
       },
 
     },
