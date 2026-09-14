@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { IconArrowLeft } from "@tabler/icons-react";
 import { GetMemberProgress } from "@/action/dashboard.action";
+import { GetMyNutrition } from "@/action/nutrition.action";
 import { StatGrid, StatTile } from "@/components/stat-tile";
 import { ColumnChart, DataTableTwin, TrendChart } from "@/components/dashboard-charts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { PredictionCard } from "./_components/PredictionCard";
 
 export const metadata = { title: "My progress" };
 
@@ -15,6 +17,9 @@ export const metadata = { title: "My progress" };
  */
 export default async function MemberProgressPage() {
   const p = await GetMemberProgress();
+  // Sequential on purpose: the pool has one connection, so Promise.all would
+  // queue these anyway.
+  const nutrition = await GetMyNutrition();
   const thisWeek = p.weeks[p.weeks.length - 1];
   const hasVolume = p.weeks.some((w) => w.volumeKg > 0);
 
@@ -28,7 +33,7 @@ export default async function MemberProgressPage() {
       </Link>
       <div>
         <h1 className="text-2xl font-semibold">My progress</h1>
-        <p className="text-muted-foreground text-sm">Built from the workouts you log and your gym check-ins.</p>
+        <p className="text-muted-foreground text-sm">Built from the workouts you log, your weigh-ins and your gym check-ins.</p>
       </div>
 
       <StatGrid className="md:grid-cols-4">
@@ -71,6 +76,8 @@ export default async function MemberProgressPage() {
         </Card>
       )}
 
+      <PredictionCard nutrition={nutrition} adherencePct={p.plan?.adherencePct ?? null} />
+
       <Card>
         <CardHeader>
           <CardTitle>Workouts per week</CardTitle>
@@ -98,11 +105,11 @@ export default async function MemberProgressPage() {
         </Card>
       )}
 
-      {p.weights.length >= 2 && (
+      {!nutrition.plan && p.weights.length >= 2 && (
         <Card>
           <CardHeader>
             <CardTitle>Body weight</CardTitle>
-            <CardDescription>From your fitness records at the front desk.</CardDescription>
+            <CardDescription>From the weigh-ins you log.</CardDescription>
           </CardHeader>
           <CardContent>
             <TrendChart data={p.weights.map((w) => ({ label: w.label, value: w.value }))} seriesLabel="Weight" unit="kg" height={200} />

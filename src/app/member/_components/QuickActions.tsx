@@ -5,13 +5,14 @@ import {
   CreditCard,
   Dumbbell,
   MessageCircle,
+  Salad,
   Sparkles,
   TrendingUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
- * The member's seven destinations.
+ * The member's eight destinations.
  *
  * These used to live inside the Member Details card's <CardAction> slot — a
  * shadcn grid cell sized for one small button. Seven buttons in a single
@@ -32,7 +33,8 @@ type Action = {
 
 const ACTIONS: Action[] = [
   { href: "/member/workout-plan", label: "My plan", icon: Sparkles, hint: "Today's workout", primary: true },
-  { href: "/member/progress", label: "Progress", icon: TrendingUp, hint: "Streak & volume" },
+  { href: "/member/progress", label: "Progress", icon: TrendingUp, hint: "Streak & prediction" },
+  { href: "/member/nutrition", label: "Nutrition", icon: Salad, hint: "Calories & food" },
   { href: "/member/chat", label: "Assistant", icon: Sparkles, hint: "Ask about your plan" },
   { href: "/member/trainers", label: "Book a trainer", icon: CalendarPlus, hint: "Find a slot" },
   { href: "/member/workout", label: "Exercises", icon: Dumbbell, hint: "Browse the library" },

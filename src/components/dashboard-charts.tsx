@@ -7,6 +7,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  ComposedChart,
   Line,
   LineChart,
   XAxis,
@@ -208,6 +209,140 @@ export function TrendChart({
           />
         </LineChart>
       )}
+    </ChartContainer>
+  );
+}
+
+/* ───────────────────────────── prediction vs actual ──────────────────────── */
+
+export type PredictionDatum = { week: number; predicted: number; band: [number, number] };
+export type ActualDatum = { week: number; actual: number };
+
+const HORIZON_TICKS: Record<number, string> = { 0: "Start", 4: "1 mo", 13: "3 mo", 26: "6 mo", 52: "12 mo" };
+
+/**
+ * Legend drawn to match the marks: a dashed line, a shaded box, an orange dot.
+ * The stock legend gives every series the same square swatch, so "Predicted"
+ * and "Likely range" came out identical, and a dots-only series had none at
+ * all. Rendered inside the chart container so the theme colour variables apply.
+ */
+function PredictionLegend() {
+  return (
+    <ul className="text-muted-foreground flex flex-wrap items-center justify-center gap-x-4 gap-y-1 pt-3 text-xs">
+      <li className="flex items-center gap-1.5">
+        <svg width="18" height="8" aria-hidden="true">
+          <line x1="0" y1="4" x2="18" y2="4" stroke="var(--color-predicted)" strokeWidth="2" strokeDasharray="4 3" />
+        </svg>
+        Predicted
+      </li>
+      <li className="flex items-center gap-1.5">
+        <span aria-hidden="true" className="inline-block h-2.5 w-4 rounded-sm" style={{ backgroundColor: "var(--color-band)", opacity: 0.25 }} />
+        Likely range
+      </li>
+      <li className="flex items-center gap-1.5">
+        <span aria-hidden="true" className="inline-block size-2.5 rounded-full" style={{ backgroundColor: "var(--color-actual)" }} />
+        Your weigh-ins
+      </li>
+    </ul>
+  );
+}
+
+/**
+ * Predicted body weight over a year, with its uncertainty range, and the
+ * member's real weigh-ins on top.
+ *
+ * The predicted line is DASHED on purpose — dashing is the convention for a
+ * projection, and it keeps "what we expect" visibly different from "what
+ * happened" (the solid orange weigh-in dots). The range is a 10% wash in the
+ * same hue as the line it belongs to. One y-axis, kilograms.
+ *
+ * Weigh-ins are merged into the same weekly rows as the prediction rather than
+ * drawn as a separate Scatter series. A Scatter with its own data array breaks
+ * the shared tooltip in a ComposedChart — it stayed stuck on week 0 wherever
+ * the cursor was. Weekly resolution matches how often members weigh in.
+ */
+export function PredictionChart({
+  predicted,
+  actual,
+  height = 260,
+  className,
+}: {
+  predicted: PredictionDatum[];
+  actual: ActualDatum[];
+  height?: number;
+  className?: string;
+}) {
+  const config: ChartConfig = {
+    predicted: { label: "Predicted", theme: SERIES.one },
+    band: { label: "Likely range", theme: SERIES.one },
+    actual: { label: "Your weigh-ins", theme: SERIES.two },
+  };
+  // A later weigh-in in the same week wins — it is the more recent reading.
+  const byWeek = new Map<number, number>();
+  for (const a of [...actual].sort((x, y) => x.week - y.week)) byWeek.set(Math.round(a.week), a.actual);
+  const data = predicted.map((p) => ({ ...p, actual: byWeek.get(p.week) ?? null }));
+
+  const all = [...predicted.flatMap((p) => p.band), ...actual.map((a) => a.actual)];
+  const lo = Math.floor(Math.min(...all) - 1);
+  const hi = Math.ceil(Math.max(...all) + 1);
+  const kg = (v: unknown) =>
+    Array.isArray(v) ? `${v[0]}–${v[1]} kg` : `${Number(v).toLocaleString()} kg`;
+
+  return (
+    <ChartContainer config={config} className={cn("w-full", className)} style={{ height }}>
+      <ComposedChart data={data} margin={{ top: 12, right: 12, left: -8, bottom: 0 }}>
+        <CartesianGrid vertical={false} strokeWidth={1} className="stroke-border" />
+        <XAxis
+          dataKey="week"
+          type="number"
+          domain={[0, 52]}
+          ticks={[0, 4, 13, 26, 52]}
+          tickFormatter={(w) => HORIZON_TICKS[w] ?? `Wk ${w}`}
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          tick={axisTick}
+        />
+        <YAxis tickLine={false} axisLine={false} width={48} tick={axisTick} domain={[lo, hi]} allowDecimals={false} />
+        <ChartTooltip
+          content={
+            <ChartTooltipContent
+              labelFormatter={(_, payload) => {
+                const w = Number(payload?.[0]?.payload?.week ?? 0);
+                return w === 0 ? "Start" : `Week ${Math.round(w)}`;
+              }}
+              formatter={(v, name) => `${config[name as keyof typeof config]?.label ?? name}: ${kg(v)}`}
+            />
+          }
+        />
+        <ChartLegend content={<PredictionLegend />} />
+        <Area
+          dataKey="band"
+          stroke="none"
+          fill="var(--color-band)"
+          fillOpacity={0.1}
+          isAnimationActive={false}
+          activeDot={false}
+        />
+        <Line
+          dataKey="predicted"
+          type="monotone"
+          stroke="var(--color-predicted)"
+          strokeWidth={2}
+          strokeDasharray="6 4"
+          dot={false}
+          activeDot={{ r: 4 }}
+          isAnimationActive={false}
+        />
+        <Line
+          dataKey="actual"
+          stroke="none"
+          dot={{ r: 5, strokeWidth: 2, stroke: "var(--background)", fill: "var(--color-actual)" }}
+          activeDot={{ r: 6, strokeWidth: 2, stroke: "var(--background)", fill: "var(--color-actual)" }}
+          connectNulls={false}
+          isAnimationActive={false}
+        />
+      </ComposedChart>
     </ChartContainer>
   );
 }

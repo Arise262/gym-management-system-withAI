@@ -7,6 +7,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { InfoIcon } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
+import { ACTIVITY_LEVELS, mifflinStJeor } from "@/lib/nutrition"
 
 const BMRCalculator: React.FC = () => {
   // Initial state values
@@ -16,32 +17,18 @@ const BMRCalculator: React.FC = () => {
   const [gender, setGender] = useState<string>("male")
   const [bmr, setBMR] = useState<number>(0)
   
-  // Activity multipliers for TDEE (Total Daily Energy Expenditure)
-  const activityLevels = [
-    { label: "Sedentary (office job)", factor: 1.2 },
-    { label: "Light exercise (1-2 days/week)", factor: 1.375 },
-    { label: "Moderate exercise (3-5 days/week)", factor: 1.55 },
-    { label: "Heavy exercise (6-7 days/week)", factor: 1.725 },
-    { label: "Athlete (2x per day)", factor: 1.9 }
-  ]
+  // Activity multipliers for TDEE. Shared with the member nutrition feature,
+  // so the admin tool and a member's targets can never disagree.
+  const activityLevels = ACTIVITY_LEVELS
 
   // Calculate BMR whenever inputs change
   useEffect(() => {
     calculateBMR()
   }, [weight, height, age, gender])
 
-  // Calculate BMR using Mifflin-St Jeor formula
+  // Mifflin-St Jeor, from the shared module
   const calculateBMR = () => {
-    // Mifflin-St Jeor Formula
-    let bmrValue = 0
-    
-    if (gender === "male") {
-      bmrValue = 10 * weight + 6.25 * height - 5 * age + 5
-    } else {
-      bmrValue = 10 * weight + 6.25 * height - 5 * age - 161
-    }
-    
-    setBMR(Math.round(bmrValue))
+    setBMR(Math.round(mifflinStJeor(weight, height, age, gender === "male" ? "male" : "female")))
   }
 
   return (

@@ -14,16 +14,19 @@ export const claude = globalForClaude.claude ?? new Anthropic();
 if (process.env.NODE_ENV !== "production") globalForClaude.claude = claude;
 
 /**
- * Model per task. Both are deliberately below the claude-opus-5 default:
- * the workload is structured generation from a supplied candidate list and
- * short conversational turns, neither of which needs Opus-tier reasoning,
- * and this project is cost-constrained.
+ * Model per task. All are deliberately below the claude-opus-5 default:
+ * the workload is structured generation from a supplied candidate list,
+ * short conversational turns and short explanations of supplied numbers,
+ * none of which needs Opus-tier reasoning, and this project is
+ * cost-constrained.
  */
 export const MODELS = {
   /** Workout plan generation — structured output over a filtered exercise list. */
   planner: "claude-sonnet-5",
   /** Support chatbot — short turns over the member's own data. */
   chat: "claude-haiku-4-5",
+  /** Nutrition explanation — a short paragraph about numbers it is given, never computes any. */
+  nutrition: "claude-haiku-4-5",
 } as const;
 
 /** True when a key is configured. Lets callers fail with a clear message. */

@@ -86,6 +86,7 @@ model Member {
   payments        Payment[]
   retentionScores RetentionScore[]
   engagement      EngagementMetric[]
+  nutritionPlans  NutritionPlan[]
 }
 
 enum FitnessGoal {
@@ -210,9 +211,13 @@ enum WalkInRate {
 model FitnessRecord {
   id          String   @id @default(uuid())
   member_id   String
-  member      Member   @relation(fields: [member_id], references: [id])
+  /// Cascade: weigh-ins are the member's own data and go with them. Without it,
+  /// deleting a member who had ever weighed in failed on this foreign key.
+  member      Member   @relation(fields: [member_id], references: [id], onDelete: Cascade)
   date        String
-  weight      Int
+  /// Kilograms. Float, not Int: a cut moves about half a kilo a week, so whole
+  /// kilograms would turn the weight chart into a staircase.
+  weight      Float
   height      Int
   chest       Int?
   abs         Int?
@@ -225,6 +230,9 @@ model FitnessRecord {
   sitAndReach Int?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  /// One weigh-in per member per day — logging again the same day corrects it.
+  @@unique([member_id, date])
 }
 
 model ToDo {
@@ -398,6 +406,54 @@ enum PlanStatus {
   ACTIVE
   COMPLETED
   ARCHIVED
+}
+
+// ── Nutrition + progress prediction ───────────────────────────────────────
+
+/// A member's chosen nutrition phase, with the inputs it was calculated from.
+///
+/// The inputs are a SNAPSHOT, not read live from the profile: the prediction is
+/// anchored to the weight and date the plan started. Recomputing it from the
+/// latest weigh-in on every view would make it move with the member, so it could
+/// never be wrong — and "on track / behind" would mean nothing.
+model NutritionPlan {
+  id       String         @id @default(uuid())
+  memberId String
+  member   Member         @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  phase    NutritionPhase
+  status   PlanStatus     @default(ACTIVE)
+
+  // Inputs at the start.
+  startedOn      String // gym date, dd-MM-yyyy, like every other date column here
+  startWeightKg  Float
+  heightCm       Int
+  age            Int
+  sex            Gender
+  activityLevel  ActivityLevel
+  targetWeightKg Int?
+
+  // Daily targets calculated from those inputs.
+  calories Int
+  proteinG Int
+  carbsG   Int
+  fatG     Int
+
+  /// Plain-language explanation written by Claude. Null until it arrives, or if
+  /// the call failed or invented a number — the page then uses a formula-written
+  /// summary. The numbers above never depend on it.
+  aiSummary String?
+  modelUsed String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([memberId, status])
+}
+
+enum NutritionPhase {
+  CUT
+  MAINTAIN
+  BULK
 }
 
 model WorkoutPlanDay {
