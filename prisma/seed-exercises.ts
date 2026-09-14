@@ -9,6 +9,7 @@
  */
 import { PrismaClient } from "@prisma/client";
 import raw from "../src/action/exercises.json";
+import additions from "../src/action/exercises-2026.json";
 
 const prisma = new PrismaClient();
 
@@ -33,8 +34,10 @@ function clean(v: string | null | undefined): string | null {
 }
 
 async function main() {
-  const exercises = raw as RawExercise[];
-  console.log(`Source file: ${exercises.length} exercises`);
+  // Vendored dump plus the movements added since it was published. Both feed
+  // the planner, which can only pick exercises that exist in this table.
+  const exercises = [...(raw as RawExercise[]), ...(additions as RawExercise[])];
+  console.log(`Source files: ${exercises.length} exercises`);
 
   const rows = exercises.map((e) => ({
     json_id: e.id,

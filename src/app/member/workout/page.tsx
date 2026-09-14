@@ -1,16 +1,10 @@
 import { getExercises } from '@/action/exercise.2.action'
-import { GetAllExercise } from '@/action/exercise.action'
 import WorkoutsList from '@/components/WorkoutsList'
-import React from 'react'
 
+export const metadata = { title: 'Exercise Library' }
 
-const page = async () => {
-
-  return (
-    <div>
-        <WorkoutsList AllExercise={getExercises()}/>
-    </div>
-  )
+const page = () => {
+  return <WorkoutsList AllExercise={getExercises()} />
 }
 
 export default page

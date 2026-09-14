@@ -1,0 +1,425 @@
+[
+  {
+    "name": "Bulgarian Split Squat",
+    "force": "push",
+    "level": "intermediate",
+    "mechanic": "compound",
+    "equipment": "dumbbell",
+    "primaryMuscles": [
+      "quadriceps"
+    ],
+    "secondaryMuscles": [
+      "glutes",
+      "hamstrings",
+      "calves"
+    ],
+    "instructions": [
+      "Stand about two feet in front of a bench holding a dumbbell in each hand at your sides.",
+      "Place the top of your rear foot on the bench behind you. Your front foot carries the work; the back leg is only for balance.",
+      "Keeping your torso upright, bend your front knee and lower until your front thigh is roughly parallel to the floor.",
+      "Drive through the whole of your front foot to stand back up, without pushing off the rear leg.",
+      "Finish all your reps on one leg before swapping sides."
+    ],
+    "category": "strength",
+    "images": [],
+    "id": "Bulgarian_Split_Squat"
+  },
+  {
+    "name": "Nordic Hamstring Curl",
+    "force": "pull",
+    "level": "expert",
+    "mechanic": "isolation",
+    "equipment": "body only",
+    "primaryMuscles": [
+      "hamstrings"
+    ],
+    "secondaryMuscles": [
+      "glutes",
+      "calves"
+    ],
+    "instructions": [
+      "Kneel on a pad with your ankles anchored under a secure bar, or held down by a partner.",
+      "Squeeze your glutes and brace your abs so your body makes a straight line from knees to shoulders.",
+      "Lower your torso toward the floor as slowly as you can, resisting the whole way with your hamstrings.",
+      "Catch yourself with your hands when you can no longer control the descent.",
+      "Push off the floor just enough to get back to the start, then begin the next rep."
+    ],
+    "category": "strength",
+    "images": [],
+    "id": "Nordic_Hamstring_Curl"
+  },
+  {
+    "name": "Copenhagen Plank",
+    "force": "static",
+    "level": "intermediate",
+    "mechanic": "isolation",
+    "equipment": "body only",
+    "primaryMuscles": [
+      "adductors"
+    ],
+    "secondaryMuscles": [
+      "abdominals",
+      "glutes"
+    ],
+    "instructions": [
+      "Lie on your side and set your forearm under your shoulder as you would for a side plank.",
+      "Rest the inside of your top leg on a bench, near the knee to start with and nearer the ankle as you get stronger.",
+      "Press down into the bench with the top leg and lift your hips until your body is in a straight line.",
+      "Let the bottom leg hang, or tuck it under the bench.",
+      "Hold, then lower under control and swap sides."
+    ],
+    "category": "strength",
+    "images": [],
+    "id": "Copenhagen_Plank"
+  },
+  {
+    "name": "Bird Dog",
+    "force": "static",
+    "level": "beginner",
+    "mechanic": "compound",
+    "equipment": "body only",
+    "primaryMuscles": [
+      "lower back"
+    ],
+    "secondaryMuscles": [
+      "abdominals",
+      "glutes",
+      "shoulders"
+    ],
+    "instructions": [
+      "Start on all fours with your hands under your shoulders and your knees under your hips.",
+      "Brace your abs so your lower back stays flat, not arched or rounded.",
+      "Reach one arm forward and the opposite leg straight back until both are level with your torso.",
+      "Hold, keeping your hips square to the floor — do not let one side rotate up.",
+      "Return under control and repeat on the other side."
+    ],
+    "category": "strength",
+    "images": [],
+    "id": "Bird_Dog"
+  },
+  {
+    "name": "Chest-Supported Dumbbell Row",
+    "force": "pull",
+    "level": "beginner",
+    "mechanic": "compound",
+    "equipment": "dumbbell",
+    "primaryMuscles": [
+      "middle back"
+    ],
+    "secondaryMuscles": [
+      "lats",
+      "biceps",
+      "shoulders"
+    ],
+    "instructions": [
+      "Set an incline bench to roughly 45 degrees and lie chest-down on it with a dumbbell in each hand.",
+      "Let your arms hang straight down and your shoulder blades spread apart.",
+      "Pull the dumbbells toward your hips, leading with your elbows and squeezing your shoulder blades together.",
+      "Pause briefly at the top without letting your chest come off the bench.",
+      "Lower the weights all the way back down under control."
+    ],
+    "category": "strength",
+    "images": [],
+    "id": "Chest_Supported_Dumbbell_Row"
+  },
+  {
+    "name": "Pendlay Row",
+    "force": "pull",
+    "level": "intermediate",
+    "mechanic": "compound",
+    "equipment": "barbell",
+    "primaryMuscles": [
+      "middle back"
+    ],
+    "secondaryMuscles": [
+      "lats",
+      "biceps",
+      "lower back",
+      "traps"
+    ],
+    "instructions": [
+      "Set a barbell on the floor and stand over it with your feet about hip-width apart.",
+      "Hinge at the hips until your torso is parallel to the floor, and take an overhand grip just outside your knees.",
+      "Brace hard and pull the bar explosively into your lower chest, keeping your torso still.",
+      "Return the bar all the way to the floor and let it settle between reps.",
+      "Reset your back position before every rep — this lift starts dead each time."
+    ],
+    "category": "strength",
+    "images": [],
+    "id": "Pendlay_Row"
+  },
+  {
+    "name": "Burpee",
+    "force": "push",
+    "level": "beginner",
+    "mechanic": "compound",
+    "equipment": "body only",
+    "primaryMuscles": [
+      "quadriceps"
+    ],
+    "secondaryMuscles": [
+      "chest",
+      "shoulders",
+      "triceps",
+      "abdominals",
+      "glutes"
+    ],
+    "instructions": [
+      "Stand tall with your feet about shoulder-width apart.",
+      "Squat down and place your hands on the floor in front of your feet.",
+      "Jump or step your feet back into a push-up position, keeping your hips level with your shoulders.",
+      "Lower your chest to the floor for a push-up, then press back up.",
+      "Jump or step your feet back in toward your hands, then stand and jump straight up with your arms overhead."
+    ],
+    "category": "cardio",
+    "images": [],
+    "id": "Burpee"
+  },
+  {
+    "name": "Wall Sit",
+    "force": "static",
+    "level": "beginner",
+    "mechanic": "isolation",
+    "equipment": "body only",
+    "primaryMuscles": [
+      "quadriceps"
+    ],
+    "secondaryMuscles": [
+      "glutes",
+      "calves"
+    ],
+    "instructions": [
+      "Stand with your back flat against a wall and walk your feet out about two feet.",
+      "Slide down the wall until your knees are bent to about 90 degrees and your thighs are parallel to the floor.",
+      "Keep your whole back against the wall and your weight in your heels.",
+      "Hold the position and breathe normally rather than holding your breath.",
+      "Walk your feet back in and stand up when the hold is finished."
+    ],
+    "category": "strength",
+    "images": [],
+    "id": "Wall_Sit"
+  },
+  {
+    "name": "Ab Wheel Rollout",
+    "force": "static",
+    "level": "intermediate",
+    "mechanic": "compound",
+    "equipment": "other",
+    "primaryMuscles": [
+      "abdominals"
+    ],
+    "secondaryMuscles": [
+      "lats",
+      "shoulders",
+      "lower back"
+    ],
+    "instructions": [
+      "Kneel on a pad and hold an ab wheel on the floor directly under your shoulders.",
+      "Squeeze your glutes and tuck your ribs down so your lower back is flat.",
+      "Roll the wheel forward, letting your body extend, and go only as far as you can without your hips sagging.",
+      "Pull the wheel back in by bracing your abs — not by sitting back onto your heels.",
+      "Stop the set the moment your lower back starts to arch."
+    ],
+    "category": "strength",
+    "images": [],
+    "id": "Ab_Wheel_Rollout"
+  },
+  {
+    "name": "Hollow Body Hold",
+    "force": "static",
+    "level": "intermediate",
+    "mechanic": "isolation",
+    "equipment": "body only",
+    "primaryMuscles": [
+      "abdominals"
+    ],
+    "secondaryMuscles": [
+      "quadriceps"
+    ],
+    "instructions": [
+      "Lie on your back with your arms overhead and your legs straight.",
+      "Press your lower back flat into the floor and keep it there for the whole hold.",
+      "Lift your shoulder blades and your legs a few inches off the floor.",
+      "Lower your arms and legs only as far as you can while keeping your back flat.",
+      "Hold, then bend your knees and set everything down when the position starts to break."
+    ],
+    "category": "strength",
+    "images": [],
+    "id": "Hollow_Body_Hold"
+  },
+  {
+    "name": "Suitcase Carry",
+    "force": "",
+    "level": "beginner",
+    "mechanic": "compound",
+    "equipment": "dumbbell",
+    "primaryMuscles": [
+      "abdominals"
+    ],
+    "secondaryMuscles": [
+      "forearms",
+      "traps",
+      "glutes",
+      "lower back"
+    ],
+    "instructions": [
+      "Stand a heavy dumbbell or kettlebell beside one foot and pick it up with a flat back.",
+      "Stand tall with the weight hanging at one side and your shoulders level.",
+      "Walk in a straight line, resisting the pull that wants to bend you toward the weight.",
+      "Keep your ribs down and your steps even rather than rushing.",
+      "Set the weight down with a flat back, then repeat carrying on the other side."
+    ],
+    "category": "strongman",
+    "images": [],
+    "id": "Suitcase_Carry"
+  },
+  {
+    "name": "Cossack Squat",
+    "force": "push",
+    "level": "intermediate",
+    "mechanic": "compound",
+    "equipment": "body only",
+    "primaryMuscles": [
+      "adductors"
+    ],
+    "secondaryMuscles": [
+      "quadriceps",
+      "glutes",
+      "hamstrings"
+    ],
+    "instructions": [
+      "Stand with your feet much wider than shoulder-width, toes pointing slightly out.",
+      "Shift your weight over one leg and sit down into that hip, bending that knee.",
+      "Let the other leg straighten out to the side with the toes coming off the floor.",
+      "Go as low as your hips allow with your heel staying down, then push back to the middle.",
+      "Repeat to the other side, alternating for the set."
+    ],
+    "category": "strength",
+    "images": [],
+    "id": "Cossack_Squat"
+  },
+  {
+    "name": "Dead Hang",
+    "force": "static",
+    "level": "beginner",
+    "mechanic": "",
+    "equipment": "other",
+    "primaryMuscles": [
+      "lats"
+    ],
+    "secondaryMuscles": [
+      "forearms",
+      "shoulders",
+      "middle back"
+    ],
+    "instructions": [
+      "Take an overhand grip on a pull-up bar, about shoulder-width apart.",
+      "Step or jump off and let your body hang with your arms straight.",
+      "Keep your shoulders active rather than shrugged up into your ears.",
+      "Relax your legs and breathe, letting your spine decompress.",
+      "Step down under control rather than dropping off the bar."
+    ],
+    "category": "stretching",
+    "images": [],
+    "id": "Dead_Hang"
+  },
+  {
+    "name": "Couch Stretch",
+    "force": "static",
+    "level": "beginner",
+    "mechanic": "isolation",
+    "equipment": "body only",
+    "primaryMuscles": [
+      "quadriceps"
+    ],
+    "secondaryMuscles": [
+      "glutes",
+      "abdominals"
+    ],
+    "instructions": [
+      "Kneel in front of a wall or the base of a bench with a pad under your knee.",
+      "Slide one knee back so the shin runs up the wall and the top of that foot rests against it.",
+      "Bring the other foot forward and flat on the floor in a half-kneeling position.",
+      "Squeeze the glute of the back leg and bring your torso upright until you feel a stretch down the front of the hip and thigh.",
+      "Breathe and hold, then swap sides."
+    ],
+    "category": "stretching",
+    "images": [],
+    "id": "Couch_Stretch"
+  },
+  {
+    "name": "90/90 Hip Switch",
+    "force": "static",
+    "level": "beginner",
+    "mechanic": "compound",
+    "equipment": "body only",
+    "primaryMuscles": [
+      "glutes"
+    ],
+    "secondaryMuscles": [
+      "abductors",
+      "adductors",
+      "lower back"
+    ],
+    "instructions": [
+      "Sit on the floor with one leg bent in front of you at 90 degrees and the other bent out to the side at 90 degrees.",
+      "Sit up tall with your hands on the floor behind you for support.",
+      "Keeping your feet where they are, rotate both knees over to the other side and let them settle on the floor.",
+      "Pause for a second in each position rather than rushing the switch.",
+      "Keep alternating sides for the set."
+    ],
+    "category": "stretching",
+    "images": [],
+    "id": "90_90_Hip_Switch"
+  },
+  {
+    "name": "Reverse Nordic Curl",
+    "force": "static",
+    "level": "intermediate",
+    "mechanic": "isolation",
+    "equipment": "body only",
+    "primaryMuscles": [
+      "quadriceps"
+    ],
+    "secondaryMuscles": [
+      "abdominals",
+      "glutes"
+    ],
+    "instructions": [
+      "Kneel on a pad with your knees about hip-width apart and your feet flat behind you.",
+      "Squeeze your glutes and brace your abs so your hips stay straight, not bent.",
+      "Lean your whole body backward from the knees, keeping the line from knees to shoulders.",
+      "Go only as far as you can control, then pull yourself back up with your quads.",
+      "Stop the set as soon as your hips start bending to help you."
+    ],
+    "category": "strength",
+    "images": [],
+    "id": "Reverse_Nordic_Curl"
+  },
+  {
+    "name": "Air Bike Intervals",
+    "force": "push",
+    "level": "intermediate",
+    "mechanic": "compound",
+    "equipment": "machine",
+    "primaryMuscles": [
+      "quadriceps"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "shoulders",
+      "lats",
+      "abdominals"
+    ],
+    "instructions": [
+      "Set the seat so your leg is almost straight at the bottom of the pedal stroke.",
+      "Take the handles and start pedalling easily for two to three minutes to warm up.",
+      "Sprint hard, pushing and pulling the handles as well as driving the pedals, for 20 to 30 seconds.",
+      "Pedal slowly for 60 to 90 seconds to recover.",
+      "Repeat for six to ten rounds, then cool down easy for a few minutes."
+    ],
+    "category": "cardio",
+    "images": [],
+    "id": "Air_Bike_Intervals"
+  }
+]

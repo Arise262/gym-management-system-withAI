@@ -21,7 +21,7 @@ const page = (props: Props) => {
                 level: element.level,
                 mechanic: element.mechanic || '',
                 equipment: element.equipment || '',
-                primaryMuscles: element.secondaryMuscles || [],
+                primaryMuscles: element.primaryMuscles || [],
                 secondaryMuscles: element.secondaryMuscles || [],
                 instructions: element.instructions,
                 category: element.category,

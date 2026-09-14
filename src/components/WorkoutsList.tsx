@@ -1,124 +1,157 @@
 'use client'
-import React, { useState, useMemo } from 'react'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import React, { useState, useMemo, useEffect } from 'react'
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from './ui/badge'
 import { Dumbbell, ListFilter, Search } from 'lucide-react'
 import { Input } from './ui/input'
+import { Button } from './ui/button'
 import Link from 'next/link'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import Image from 'next/image'
-
-type Exercise = {
-    id: string;
-    name: string;
-    category: string;
-    equipment: string;
-    level: string;
-    images: string[];
-    [key: string]: any;
-}
+import type { ExerciseListItem } from '@/action/exercise.2.action'
+import { displayLevel } from '@/lib/exercise-guidance'
 
 type Props = {
-    AllExercise: any[]
+    AllExercise: ExerciseListItem[]
 }
 
+const CATEGORIES = [
+    'all',
+    'strength',
+    'stretching',
+    'cardio',
+    'plyometrics',
+    'powerlifting',
+    'olympic weightlifting',
+    'strongman',
+]
+
+/** How many cards to mount at once. The library is 880+ entries and every card
+ *  carries an image, so rendering the lot makes the first paint crawl. */
+const PAGE_SIZE = 24
+
 const WorkoutsList = ({ AllExercise }: Props) => {
-    const [searchQuery, setSearchQuery] = useState('');
-    const [activeCategory, setActiveCategory] = useState('all');
+    const [searchQuery, setSearchQuery] = useState('')
+    const [activeCategory, setActiveCategory] = useState('all')
+    const [equipment, setEquipment] = useState('all')
+    const [visible, setVisible] = useState(PAGE_SIZE)
 
-    // Extract unique categories for tabs
-    const categories = [
-        "all",
-        "powerlifting",
-        "strength",
-        "stretching",
-        "cardio",
-        "olympic weightlifting",
-        "strongman",
-        "plyometrics"
-    ];
+    /** Equipment options come from the data rather than a hand-kept list, so a
+     *  new exercise with new kit shows up in the filter automatically. */
+    const equipmentOptions = useMemo(() => {
+        const set = new Set<string>()
+        for (const e of AllExercise) if (e.equipment) set.add(e.equipment)
+        return ['all', ...[...set].sort()]
+    }, [AllExercise])
 
-    // Filter exercises based on search query and active category
     const filteredExercises = useMemo(() => {
-        return AllExercise.filter(exercise => {
-            // Filter by search query
-            const matchesSearch = exercise.name.toLowerCase().includes(searchQuery.toLowerCase());
+        const query = searchQuery.trim().toLowerCase()
+        return AllExercise.filter((exercise) => {
+            // Search covers the muscle names too — "glutes" is how a member
+            // looks for a glute exercise, not by remembering its name.
+            const matchesSearch =
+                query === '' ||
+                exercise.name.toLowerCase().includes(query) ||
+                exercise.primaryMuscles.some((m) => m.toLowerCase().includes(query))
 
-            // Filter by category
-            const matchesCategory = activeCategory === 'all' || exercise.category === activeCategory;
+            const matchesCategory =
+                activeCategory === 'all' || exercise.category === activeCategory
 
-            return matchesSearch && matchesCategory;
-        });
-    }, [AllExercise, searchQuery, activeCategory]);
+            const matchesEquipment = equipment === 'all' || exercise.equipment === equipment
 
-    // Handler for search input
-    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setSearchQuery(e.target.value);
-    };
+            return matchesSearch && matchesCategory && matchesEquipment
+        })
+    }, [AllExercise, searchQuery, activeCategory, equipment])
 
-    // Handler for category change
-    const handleCategoryChange = (category: string) => {
-        setActiveCategory(category);
-    };
+    // Any change to the filters starts the list over from the top.
+    useEffect(() => {
+        setVisible(PAGE_SIZE)
+    }, [searchQuery, activeCategory, equipment])
+
+    const shown = filteredExercises.slice(0, visible)
 
     return (
-        <div className='space-y-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6'>
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div className='flex  items-center gap-2'>
-                    <Image src="/logo.png" width={40} height={40} alt="CBG Fitness Center" className='dark:hidden' />
-                    <Image src="/logo-light.png" width={40} height={40} alt="CBG Fitness Center" className='hidden dark:block' />
-                    <h1 className="text-2xl font-bold tracking-tight">Exercise Library</h1>
-
+        <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+            <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+                <div className="flex items-center gap-2">
+                    <Image src="/logo.png" width={40} height={40} alt="CBG Fitness Center" className="dark:hidden" />
+                    <Image src="/logo-light.png" width={40} height={40} alt="CBG Fitness Center" className="hidden dark:block" />
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight">Exercise Library</h1>
+                        <p className="text-muted-foreground text-sm">
+                            Tap any exercise for how to do it, and how many sets and reps.
+                        </p>
+                    </div>
                 </div>
 
-                {/* Search input with icon */}
                 <div className="relative w-full sm:w-1/2 lg:w-1/3">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                     <Input
-                        placeholder="Search exercises..."
+                        placeholder="Search by name or muscle..."
                         className="pl-10"
                         value={searchQuery}
-                        onChange={handleSearchChange}
+                        onChange={(e) => setSearchQuery(e.target.value)}
                     />
                 </div>
             </div>
 
-            {/* Category Tabs */}
-            <Tabs defaultValue="all" onValueChange={handleCategoryChange} className="w-full">
-                <TabsList className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 w-full h-auto">
-                    {categories.map((category) => (
-                        <TabsTrigger
-                            key={category}
-                            value={category}
-                            className="capitalize text-sm py-2"
-                        >
-                            {category === "all" ? "All Exercises" : category}
+            <Tabs value={activeCategory} onValueChange={setActiveCategory} className="w-full">
+                <TabsList className="grid h-auto w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-8">
+                    {CATEGORIES.map((category) => (
+                        <TabsTrigger key={category} value={category} className="py-2 text-sm capitalize">
+                            {category === 'all' ? 'All' : category}
                         </TabsTrigger>
                     ))}
                 </TabsList>
-
-                {/* Content for all tabs */}
-                <TabsContent value={activeCategory} className="mt-6">
-                    {filteredExercises.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-12 text-center">
-                            <ListFilter className="h-12 w-12 text-muted-foreground mb-4" />
-                            <h3 className="text-lg font-medium">No exercises found</h3>
-                            <p className="text-muted-foreground mt-2">
-                                Try adjusting your search or filter to find what you're looking for.
-                            </p>
-                        </div>
-                    ) : (
-                        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
-                            {filteredExercises.map((exercise) => ExerciseCard(exercise))}
-                        </div>
-                    )}
-                </TabsContent>
             </Tabs>
 
-            {/* Results counter */}
-            <div className="text-sm text-muted-foreground">
-                Showing {filteredExercises.length} {filteredExercises.length === 1 ? 'exercise' : 'exercises'}
+            <div className="flex flex-wrap items-center gap-2">
+                <span className="text-muted-foreground text-sm">Equipment</span>
+                {equipmentOptions.map((option) => (
+                    <Button
+                        key={option}
+                        type="button"
+                        size="sm"
+                        variant={equipment === option ? 'default' : 'outline'}
+                        className="h-7 capitalize"
+                        onClick={() => setEquipment(option)}
+                    >
+                        {option === 'all' ? 'Any' : option}
+                    </Button>
+                ))}
+            </div>
+
+            {filteredExercises.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <ListFilter className="text-muted-foreground mb-4 h-12 w-12" />
+                    <h3 className="text-lg font-medium">No exercises found</h3>
+                    <p className="text-muted-foreground mt-2">
+                        Try a different search term, or clear one of the filters.
+                    </p>
+                </div>
+            ) : (
+                <>
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        {shown.map((exercise) => (
+                            <ExerciseCard key={exercise.id} exercise={exercise} />
+                        ))}
+                    </div>
+
+                    {visible < filteredExercises.length && (
+                        <div className="flex justify-center">
+                            <Button variant="outline" onClick={() => setVisible((v) => v + PAGE_SIZE)}>
+                                Show more exercises
+                            </Button>
+                        </div>
+                    )}
+                </>
+            )}
+
+            <div className="text-muted-foreground text-sm">
+                Showing {shown.length} of {filteredExercises.length}{' '}
+                {filteredExercises.length === 1 ? 'exercise' : 'exercises'}
                 {activeCategory !== 'all' && ` in ${activeCategory}`}
+                {equipment !== 'all' && ` using ${equipment}`}
                 {searchQuery && ` matching "${searchQuery}"`}
             </div>
         </div>
@@ -127,55 +160,66 @@ const WorkoutsList = ({ AllExercise }: Props) => {
 
 export default WorkoutsList
 
-const ExerciseCard = (exercise: Exercise) => {
-
+const ExerciseCard = ({ exercise }: { exercise: ExerciseListItem }) => {
+    const [broken, setBroken] = useState(false)
 
     return (
-        <Link href={`/user/workout/${exercise.id}`} key={exercise.id}>
-            <Card className="overflow-hidden transition-all hover:shadow-lg w-full h-full flex flex-col pt-0">
-                <div className="relative h-48 w-full overflow-hidden">
-                    <Image
-                        src={`/exercises/${exercise.images[0]}`}
-                        width={600}
-                        height={200}
-                        alt={exercise.name}
-                        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105 rounded-t-md"
-                        onError={(e) => {
-                            // Fallback if image fails to load
-                            (e.target as HTMLImageElement).src = "https://placehold.co/600x400?text=Exercise";
-                        }}
-                    />
-                    <Badge className="absolute top-2 right-2 hover:bg-primary capitalize">{exercise.level}</Badge>
+        <Link href={`/member/workout/${exercise.id}`} className="h-full">
+            <Card className="flex h-full w-full flex-col overflow-hidden pt-0 transition-all hover:shadow-lg">
+                <div className="bg-muted relative h-48 w-full overflow-hidden">
+                    {exercise.image && !broken ? (
+                        <Image
+                            src={`/exercises/${exercise.image}`}
+                            width={600}
+                            height={200}
+                            alt={exercise.name}
+                            className="h-full w-full rounded-t-md object-cover transition-transform duration-300 hover:scale-105"
+                            onError={() => setBroken(true)}
+                        />
+                    ) : (
+                        // Newer entries in the library ship without photography.
+                        // A branded placeholder beats a broken image icon.
+                        <div className="text-muted-foreground flex h-full w-full flex-col items-center justify-center gap-2">
+                            <Dumbbell className="h-10 w-10 opacity-40" />
+                            <span className="text-xs">No photo yet</span>
+                        </div>
+                    )}
+                    {exercise.level && (
+                        <Badge className="absolute top-2 right-2 capitalize">
+                            {displayLevel(exercise.level)}
+                        </Badge>
+                    )}
                 </div>
-                <CardHeader className="pb-2 flex-1">
-                    <CardTitle className="text-lg font-bold line-clamp-2">{exercise.name}</CardTitle>
-                    <CardDescription className="flex flex-wrap gap-2 text-sm text-muted-foreground mt-2">
-                        <div className="flex items-center text-sm">
-                            <ListFilter className="mr-1 h-4 w-4 text-muted-foreground" />
-                            <span className="text-muted-foreground capitalize">{exercise.category}</span>
-                        </div>
-                        <div className="flex items-center text-sm">
-                            <Dumbbell className="mr-1 h-4 w-4 text-muted-foreground" />
-                            <span className="text-muted-foreground capitalize">{exercise.equipment}</span>
-                        </div>
-                        <div className="flex flex-wrap gap-1">
-                            {exercise.primaryMuscles && exercise.primaryMuscles.slice(0, 2).map((muscle: string, index: number) => (
-                                <Badge key={index} variant="outline" className=" capitalize text-xs bg-red-50 text-red-700 border-red-200">
+                <CardHeader className="flex-1 pb-2">
+                    <CardTitle className="line-clamp-2 text-lg font-bold">{exercise.name}</CardTitle>
+                    <CardDescription className="mt-2 space-y-2 text-sm">
+                        <span className="line-clamp-2 block">{exercise.summary}</span>
+                        <span className="flex flex-wrap gap-2">
+                            <span className="flex items-center text-sm">
+                                <ListFilter className="text-muted-foreground mr-1 h-4 w-4" />
+                                <span className="text-muted-foreground capitalize">{exercise.category}</span>
+                            </span>
+                            <span className="flex items-center text-sm">
+                                <Dumbbell className="text-muted-foreground mr-1 h-4 w-4" />
+                                <span className="text-muted-foreground capitalize">
+                                    {exercise.equipment ?? 'bodyweight'}
+                                </span>
+                            </span>
+                        </span>
+                        <span className="flex flex-wrap gap-1">
+                            {exercise.primaryMuscles.slice(0, 2).map((muscle) => (
+                                <Badge key={muscle} variant="secondary" className="text-xs capitalize">
                                     {muscle}
                                 </Badge>
                             ))}
-                            {exercise.primaryMuscles && exercise.primaryMuscles.length > 2 && (
-                                <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                            {exercise.primaryMuscles.length > 2 && (
+                                <Badge variant="outline" className="text-xs">
                                     +{exercise.primaryMuscles.length - 2} more
                                 </Badge>
                             )}
-                        </div>
+                        </span>
                     </CardDescription>
                 </CardHeader>
-                {/* Primary muscles badges */}
-                {/* <CardFooter className="pt-0 pb-4">
-          
-        </CardFooter> */}
             </Card>
         </Link>
     )
