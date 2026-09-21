@@ -15,7 +15,8 @@
     "db:seed:exercises": "tsx prisma/seed-exercises.ts",
     "db:sync:exercise-photos": "tsx prisma/sync-exercise-photos.ts",
     "db:seed:retention": "tsx prisma/seed-retention.ts",
-    "db:seed:activity": "tsx prisma/seed-activity.ts"
+    "db:seed:activity": "tsx prisma/seed-activity.ts",
+    "db:reset:people": "tsx prisma/reset-people.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.123.0",
