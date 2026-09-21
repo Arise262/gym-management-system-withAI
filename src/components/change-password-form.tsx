@@ -1,6 +1,8 @@
 'use client'
 
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { IconArrowLeft } from '@tabler/icons-react'
 import { useActionState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -26,6 +28,16 @@ export function ChangePasswordForm({ homeHref }: { homeHref: string }) {
 
     return (
         <div className='p-4 max-w-xl mx-auto'>
+            {/* Nothing forces this page — it is reached from the home screen by
+                choice, so someone who changes their mind needs a way out.
+                homeHref is already the right destination. */}
+            <Link href={homeHref}>
+                <Button variant='ghost' size='sm' className='-ml-2 mb-4'>
+                    <IconArrowLeft className='mr-1 size-4' />
+                    Back
+                </Button>
+            </Link>
+
             <Card>
                 <CardHeader>
                     <CardTitle>Change password</CardTitle>

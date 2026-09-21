@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect } from 'react'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from './ui/badge'
-import { Dumbbell, ListFilter, Search } from 'lucide-react'
+import { ArrowLeft, Dumbbell, ListFilter, Search } from 'lucide-react'
 import { Input } from './ui/input'
 import { Button } from './ui/button'
 import Link from 'next/link'
@@ -72,6 +72,16 @@ const WorkoutsList = ({ AllExercise }: Props) => {
 
     return (
         <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+            {/* The library is reached from the member home and is a dead end without
+                this — there is no sidebar or bottom bar on the member screens, so the
+                only way back was the browser's own button. */}
+            <Link href="/member" className="-mb-2 inline-block">
+                <Button variant="ghost" size="sm" className="-ml-2">
+                    <ArrowLeft className="mr-1 size-4" />
+                    Back
+                </Button>
+            </Link>
+
             <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
                 <div className="flex items-center gap-2">
                     <Image src="/logo.png" width={40} height={40} alt="CBG Fitness Center" className="dark:hidden" />
