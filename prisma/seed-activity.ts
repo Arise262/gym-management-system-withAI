@@ -31,7 +31,7 @@ const MEMBER_NAME = "Miguel Torres";
  */
 const PLAN_STARTED_DAYS_AGO = 21;
 
-/** What CBG charges: ₱200 a year to be a member, ₱600 a month on top. */
+/** What CBG charges: ₱200 a year to be a member, ₱600 a month on top (₱700 for non-students). */
 const ANNUAL_FEE = 200;
 const MONTHLY_BILL = 600;
 const YEAR_OF_BILLS = MONTHLY_BILL * 12; // ₱7,200
@@ -55,11 +55,11 @@ async function main() {
     }));
 
   const monthly =
-    (await prisma.services.findFirst({ where: { name: "Monthly Membership" } })) ??
+    (await prisma.services.findFirst({ where: { name: "Monthly Membership (Student)" } })) ??
     (await prisma.services.create({
       data: {
-        name: "Monthly Membership",
-        description: "Monthly membership bill.",
+        name: "Monthly Membership (Student)",
+        description: "Monthly membership bill for students.",
         price: MONTHLY_BILL,
         duration: 1,
       },

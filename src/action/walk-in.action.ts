@@ -12,7 +12,7 @@ import { WALK_IN_RATES, WEEKLY_PASS_DAYS, isWalkInRate, normaliseName } from "@/
  * Walk-ins: non-members who pay per session at the front desk, or buy a
  * 7-day pass.
  *
- * A pass is the visit it was bought on (rate WEEKLY, amount ₱280, validUntil
+ * A pass is the visit it was bought on (rate WEEKLY, amount ₱220, validUntil
  * set). Every later visit that week is its own WalkIn row pointing back at the
  * purchase through passId, with amount 0 — "covered", so nothing is charged
  * twice and revenue still sums correctly.

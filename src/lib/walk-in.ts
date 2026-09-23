@@ -13,7 +13,7 @@ import type { WalkInRate } from "@prisma/client";
 export const WALK_IN_RATES: Record<WalkInRate, { label: string; price: number }> = {
   STUDENT: { label: "Student", price: 50 },
   REGULAR: { label: "Non-student", price: 60 },
-  WEEKLY: { label: "Weekly pass", price: 280 },
+  WEEKLY: { label: "Weekly pass", price: 220 },
 };
 
 /** How many days a weekly pass covers, counting the day it is bought. */

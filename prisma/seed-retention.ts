@@ -151,11 +151,11 @@ async function main() {
     }));
 
   const monthly =
-    (await prisma.services.findFirst({ where: { name: "Monthly Membership" } })) ??
+    (await prisma.services.findFirst({ where: { name: "Monthly Membership (Student)" } })) ??
     (await prisma.services.create({
       data: {
-        name: "Monthly Membership",
-        description: "Monthly membership bill.",
+        name: "Monthly Membership (Student)",
+        description: "Monthly membership bill for students.",
         price: MONTHLY_BILL,
         duration: 1,
       },
