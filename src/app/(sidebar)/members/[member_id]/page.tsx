@@ -15,6 +15,7 @@ import { Phone } from "lucide-react"
 import { useParams } from "next/navigation"
 import { useLoading } from "@/hooks/use-loading"
 import AttendanceSummary from "./AttendanceSummary"
+import { MemberAccountPanel } from "./MemberAccountPanel"
 
 type Gender = "male" | "female" | "other"
 interface FormState {
@@ -204,6 +205,7 @@ const page = ({params}: {params:any}) => {
         Update
       </Button>
       <Separator/>
+      {formState.id && <MemberAccountPanel memberId={member_id} name={formState.name} />}
       <AttendanceSummary member_id={member_id}/>
     </div>
   )

@@ -1,12 +1,10 @@
 "use server";
 
-import { randomBytes } from "crypto";
 import { revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
 import { hashPassword } from "@/lib/accounts";
-import { isDeliverable, sendMail } from "@/lib/mail";
-import { appOrigin } from "@/lib/notifications";
+import { deliverLogin, tempPassword, type LoginDelivery } from "@/lib/login-delivery";
 import { toMinutes } from "@/lib/booking-slots";
 import { gymToday } from "@/lib/format";
 import { parseGymDate } from "@/analytics/signals";
@@ -19,11 +17,7 @@ import { parseGymDate } from "@/analytics/signals";
  * role TRAINER), a Trainer profile (what members browse and book), and weekly
  * TrainerAvailability windows (what the booking slots are cut from).
  *
- * Passwords: the admin never chooses one. A random temporary password is
- * generated and emailed straight to the trainer — deliberately with sendMail,
- * NOT notify(), because a notification is stored as a row and shown in-app,
- * and a password must not sit in the database in plain text. Only when the
- * email cannot go out is it shown to the admin, once, to hand over in person.
+ * Passwords: the admin never chooses one — see lib/login-delivery.ts.
  */
 
 export type AvailabilityInput = { dayOfWeek: number; startTime: string; endTime: string };
@@ -45,8 +39,7 @@ export type TrainerSaveResult =
   | { success: true; trainerId: string; login?: LoginDelivery }
   | { success: false; error: string; fieldErrors?: TrainerFieldErrors };
 
-/** How the temporary password reached the trainer. */
-export type LoginDelivery = { emailed: true; email: string } | { emailed: false; email: string; tempPassword: string; reason: string };
+export type { LoginDelivery };
 
 export type AdminTrainer = {
   id: string;
@@ -127,40 +120,6 @@ function validate(input: TrainerInput): { data: TrainerInput; fieldErrors: Train
   };
 }
 
-/* ───────────────────────────── passwords ───────────────────────────── */
-
-/** 12 URL-safe random characters — about 72 bits, well past the 8-character rule. */
-function tempPassword(): string {
-  return randomBytes(9).toString("base64url");
-}
-
-async function deliverLogin(email: string, name: string, password: string, isNew: boolean): Promise<LoginDelivery> {
-  if (!isDeliverable(email)) {
-    return { emailed: false, email, tempPassword: password, reason: "That address cannot receive email." };
-  }
-  const first = name.split(" ")[0];
-  const loginUrl = `${appOrigin()}/login`;
-  const res = await sendMail({
-    to: email,
-    toName: name,
-    subject: isNew ? "Your CBG Fitness Center trainer account" : "Your new CBG Fitness Center password",
-    text:
-      `Hi ${first},\n\n` +
-      (isNew
-        ? "An account has been set up for you as a trainer at CBG Fitness Center. Members can now see your profile and book sessions with you."
-        : "The front desk has reset your CBG Fitness Center password.") +
-      `\n\nSign in at ${loginUrl}\nEmail: ${email}\nTemporary password: ${password}\n\n` +
-      "Please change it after signing in — use Change password on your trainer page.",
-  });
-  if (res.sent) return { emailed: true, email };
-  return {
-    emailed: false,
-    email,
-    tempPassword: password,
-    reason: res.reason === "unconfigured" ? "Email is not set up on this server." : "The email could not be sent.",
-  };
-}
-
 /* ───────────────────────────── reading ───────────────────────────── */
 
 export async function GetAdminTrainers(): Promise<AdminTrainer[]> {
@@ -236,7 +195,7 @@ export async function CreateTrainer(input: TrainerInput): Promise<TrainerSaveRes
     select: { trainer: { select: { id: true } } },
   });
 
-  const login = await deliverLogin(data.email, data.name, password, true);
+  const login = await deliverLogin(data.email, data.name, password, { isNew: true, audience: "trainer" });
   revalidatePath("/trainers");
   return { success: true, trainerId: trainer.trainer!.id, login };
 }
@@ -290,7 +249,7 @@ export async function ResetTrainerPassword(id: string): Promise<{ success: true;
 
   const password = tempPassword();
   await prisma.user.update({ where: { id: trainer.userId }, data: { passwordHash: await hashPassword(password) } });
-  return { success: true, login: await deliverLogin(trainer.user.email, trainer.name, password, false) };
+  return { success: true, login: await deliverLogin(trainer.user.email, trainer.name, password, { isNew: false, audience: "trainer" }) };
 }
 
 /**

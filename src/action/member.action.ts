@@ -292,27 +292,7 @@ export async function UpdateMemberById(
   }
 }
 
-// 7. DeleteMemberById
-export async function DeleteMemberById(id: string): Promise<void> {
-  await requireRole("ADMIN");
-  try {
-    const member = await prisma.member.findUnique({
-      where: { id },
-      select: { userId: true },
-    });
-
-    await prisma.$transaction(async (tx) => {
-      await tx.member.delete({ where: { id } });
-      // Otherwise the login survives the member and keeps its email reserved,
-      // which then blocks re-registering the same person.
-      if (member?.userId) {
-        await tx.user.delete({ where: { id: member.userId } });
-      }
-    });
-  } catch (error: any) {
-    throw new Error(`Failed to delete member: ${error.message}`);
-  }
-}
+// 7. Deleting a member lives in member-admin.action.ts (DeleteMember).
 
 // 8. GetMembersWithTodaysBirthday
 export async function GetMembersWithTodaysBirthday(): Promise<
